@@ -1,4 +1,5 @@
-export type Unit = 'g' | 'kg' | 'ml' | 'L' | 'cl' | 'pièce' | 'c.à.s' | 'c.à.c';
+export type Unit = 'g' | 'kg' | 'ml' | 'L' | 'cl' | 'pièce' | 'c.à.s' | 'c.à.c'
+  | 'lb' | 'oz' | 'cup' | 'fl oz';
 
 export interface Ingredient {
   id: string;

@@ -18,6 +18,7 @@ import { useAdsStore } from '../../src/store/adsStore';
 import { useThemeStore } from '../../src/store/themeStore';
 import { useRecipeStore } from '../../src/store/recipeStore';
 import { useLanguageStore, type LanguageOption } from '../../src/store/languageStore';
+import { useUnitsStore, type UnitSystem } from '../../src/store/unitsStore';
 import { PremiumGate } from '../../src/components/ads/PremiumGate';
 import { syncRecipes } from '../../src/utils/syncService';
 import { useTranslation } from '../../src/i18n/useTranslation';
@@ -35,6 +36,8 @@ export default function ProfilScreen() {
   const recipes = useRecipeStore((s) => s.recipes);
   const language = useLanguageStore((s) => s.language);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
+  const unitSystem = useUnitsStore((s) => s.unitSystem);
+  const setUnitSystem = useUnitsStore((s) => s.setUnitSystem);
   const showPurchaseModal = useIapStore((s) => s.showPurchaseModal);
   const restoreIap = useIapStore((s) => s.restore);
 
@@ -226,6 +229,24 @@ export default function ProfilScreen() {
                 { value: 'auto', label: t('profile.langAuto') },
                 { value: 'fr', label: t('profile.langFr') },
                 { value: 'en', label: t('profile.langEn') },
+              ]}
+              style={styles.languageToggle}
+            />
+
+            <Divider style={styles.settingDivider} />
+
+            {/* Unit system selector */}
+            <View style={styles.settingRow}>
+              <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
+                {t('profile.unitSystem')}
+              </Text>
+            </View>
+            <SegmentedButtons
+              value={unitSystem}
+              onValueChange={(v) => setUnitSystem(v as UnitSystem)}
+              buttons={[
+                { value: 'metric', label: t('profile.unitMetric') },
+                { value: 'imperial', label: t('profile.unitImperial') },
               ]}
               style={styles.languageToggle}
             />

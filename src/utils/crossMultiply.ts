@@ -55,7 +55,7 @@ export function scaleIngredients(
  * - ml, cl, L → 1 décimale
  */
 export function smartRound(value: number, unit: string): number {
-  if (unit === 'ml' || unit === 'cl' || unit === 'L') {
+  if (unit === 'ml' || unit === 'cl' || unit === 'L' || unit === 'cup' || unit === 'fl oz') {
     return Math.round(value * 10) / 10;
   }
   return Math.round(value);

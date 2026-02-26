@@ -31,9 +31,11 @@ import { useAdsStore } from '../../src/store/adsStore';
 import { ADS_CONFIG } from '../../src/config/ads';
 import { useTranslation } from '../../src/i18n/useTranslation';
 import { useIapStore } from '../../src/store/iapStore';
+import { useUnitsStore } from '../../src/store/unitsStore';
 import type { Unit, Ingredient, Recipe } from '../../src/types/recipe';
 
-const UNITS: Unit[] = ['g', 'kg', 'ml', 'L', 'cl', 'pièce', 'c.à.s', 'c.à.c'];
+const METRIC_UNITS: Unit[] = ['g', 'kg', 'ml', 'L', 'cl', 'pièce', 'c.à.s', 'c.à.c'];
+const IMPERIAL_UNITS: Unit[] = ['oz', 'lb', 'cup', 'fl oz', 'pièce', 'c.à.s', 'c.à.c'];
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
@@ -51,6 +53,8 @@ export default function RecettesScreen() {
   const deleteRecipe = useRecipeStore((s) => s.deleteRecipe);
   const isPremium = useAdsStore((s) => s.isPremium);
   const showPurchaseModal = useIapStore((s) => s.showPurchaseModal);
+  const unitSystem = useUnitsStore((s) => s.unitSystem);
+  const UNITS = unitSystem === 'metric' ? METRIC_UNITS : IMPERIAL_UNITS;
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [recipeName, setRecipeName] = useState('');
