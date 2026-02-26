@@ -1,10 +1,11 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { useTheme } from 'react-native-paper';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTheme, Icon } from 'react-native-paper';
+import { useTranslation } from '../../src/i18n/useTranslation';
 
 export default function TabLayout() {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -15,9 +16,10 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.outlineVariant,
-          elevation: 8,
-          height: 56,
-          paddingBottom: 4,
+          elevation: 2,
+          borderTopWidth: 0.5,
+          height: 60,
+          paddingBottom: 6,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -28,27 +30,27 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Simple',
+          title: t('tabs.simple'),
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="calculator-variant" size={size} color={color} />
+            <Icon source="calculator-variant" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="recettes"
         options={{
-          title: 'Recettes',
+          title: t('tabs.recipes'),
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="book-open-variant" size={size} color={color} />
+            <Icon source="book-open-variant" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="profil"
         options={{
-          title: 'Profil',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-circle" size={size} color={color} />
+            <Icon source="account-circle" size={size} color={color} />
           ),
         }}
       />

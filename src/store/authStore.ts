@@ -66,23 +66,26 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 }));
 
+import i18n from '../i18n';
+
 function getFirebaseErrorMessage(code: string): string {
+  const t = (key: string) => i18n.t(key);
   switch (code) {
     case 'auth/invalid-email':
-      return 'Adresse email invalide.';
+      return t('auth.invalidEmail');
     case 'auth/user-disabled':
-      return 'Ce compte a été désactivé.';
+      return t('auth.userDisabled');
     case 'auth/user-not-found':
-      return 'Aucun compte trouvé avec cet email.';
+      return t('auth.userNotFound');
     case 'auth/wrong-password':
-      return 'Mot de passe incorrect.';
+      return t('auth.wrongPassword');
     case 'auth/email-already-in-use':
-      return 'Cet email est déjà utilisé.';
+      return t('auth.emailInUse');
     case 'auth/weak-password':
-      return 'Le mot de passe doit contenir au moins 6 caractères.';
+      return t('auth.weakPassword');
     case 'auth/too-many-requests':
-      return 'Trop de tentatives. Réessayez plus tard.';
+      return t('auth.tooManyRequests');
     default:
-      return 'Une erreur est survenue. Réessayez.';
+      return t('auth.genericError');
   }
 }

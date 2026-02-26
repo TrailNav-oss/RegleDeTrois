@@ -10,17 +10,22 @@ import {
   Divider,
   ActivityIndicator,
   Chip,
+  SegmentedButtons,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/store/authStore';
 import { useAdsStore } from '../../src/store/adsStore';
 import { useThemeStore } from '../../src/store/themeStore';
 import { useRecipeStore } from '../../src/store/recipeStore';
+import { useLanguageStore, type LanguageOption } from '../../src/store/languageStore';
 import { PremiumGate } from '../../src/components/ads/PremiumGate';
 import { syncRecipes } from '../../src/utils/syncService';
+import { useTranslation } from '../../src/i18n/useTranslation';
+import { useIapStore } from '../../src/store/iapStore';
 
 export default function ProfilScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   const { user, loading, error, signIn, signUp, logout, clearError, initAuth, initialized } = useAuthStore();
   const isPremium = useAdsStore((s) => s.isPremium);
@@ -28,6 +33,10 @@ export default function ProfilScreen() {
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
   const toggleDarkMode = useThemeStore((s) => s.toggleDarkMode);
   const recipes = useRecipeStore((s) => s.recipes);
+  const language = useLanguageStore((s) => s.language);
+  const setLanguage = useLanguageStore((s) => s.setLanguage);
+  const showPurchaseModal = useIapStore((s) => s.showPurchaseModal);
+  const restoreIap = useIapStore((s) => s.restore);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,7 +50,7 @@ export default function ProfilScreen() {
 
   const handleAuth = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+      Alert.alert(t('profile.error'), t('profile.fillAllFields'));
       return;
     }
     if (isSignUp) {
@@ -54,36 +63,33 @@ export default function ProfilScreen() {
   const handleSync = async () => {
     if (!user) return;
     if (!isPremium) {
-      Alert.alert('Premium requis', 'La synchronisation cloud est réservée aux utilisateurs Premium.');
+      Alert.alert(t('profile.premiumRequired'), t('profile.premiumRequiredSync'));
       return;
     }
     setSyncing(true);
     try {
       const merged = await syncRecipes(user.uid, recipes);
-      // Replace local store with merged results
       const store = useRecipeStore.getState();
-      // Clear and re-add all
       for (const r of store.recipes) {
         store.deleteRecipe(r.id);
       }
       for (const r of merged) {
-        // Directly set via internal state manipulation
         useRecipeStore.setState((state) => ({
           recipes: [...state.recipes.filter((x) => x.id !== r.id), r],
         }));
       }
-      Alert.alert('Succès', `${merged.length} recette(s) synchronisée(s).`);
+      Alert.alert(t('profile.syncSuccess'), t('profile.syncCount', { count: merged.length }));
     } catch (err: any) {
-      Alert.alert('Erreur de sync', err.message || 'Impossible de synchroniser.');
+      Alert.alert(t('profile.syncError'), err.message || t('profile.syncErrorMessage'));
     } finally {
       setSyncing(false);
     }
   };
 
   const handleLogout = () => {
-    Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Déconnecter', style: 'destructive', onPress: logout },
+    Alert.alert(t('profile.logout'), t('profile.logoutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('profile.logoutAction'), style: 'destructive', onPress: logout },
     ]);
   };
 
@@ -99,7 +105,7 @@ export default function ProfilScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.primary }]}>
-          Profil
+          {t('profile.title')}
         </Text>
 
         {/* Auth Section */}
@@ -109,7 +115,7 @@ export default function ProfilScreen() {
               <View style={styles.loggedInSection}>
                 <View style={styles.userInfoRow}>
                   <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>
-                    Connecté
+                    {t('profile.connected')}
                   </Text>
                   <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
                     {user.email}
@@ -126,12 +132,12 @@ export default function ProfilScreen() {
                       icon="cloud-sync"
                       style={styles.syncButton}
                     >
-                      Synchroniser ({recipes.length} recettes)
+                      {t('profile.sync', { count: recipes.length })}
                     </Button>
                   ) : (
                     <View style={[styles.syncGate, { backgroundColor: theme.colors.secondaryContainer }]}>
                       <Text variant="bodyMedium" style={{ color: theme.colors.onSecondaryContainer, textAlign: 'center' }}>
-                        Passez Premium pour synchroniser vos recettes dans le cloud.
+                        {t('profile.syncPremiumRequired')}
                       </Text>
                     </View>
                   )}
@@ -143,17 +149,17 @@ export default function ProfilScreen() {
                   textColor={theme.colors.error}
                   style={styles.logoutButton}
                 >
-                  Déconnexion
+                  {t('profile.logout')}
                 </Button>
               </View>
             ) : (
               <View style={styles.authForm}>
                 <Text variant="titleMedium" style={[styles.authTitle, { color: theme.colors.onSurface }]}>
-                  {isSignUp ? 'Créer un compte' : 'Connexion'}
+                  {isSignUp ? t('profile.createAccount') : t('profile.login')}
                 </Text>
 
                 <TextInput
-                  label="Email"
+                  label={t('profile.email')}
                   value={email}
                   onChangeText={(v) => { setEmail(v); clearError(); }}
                   mode="outlined"
@@ -163,7 +169,7 @@ export default function ProfilScreen() {
                   activeOutlineColor={theme.colors.primary}
                 />
                 <TextInput
-                  label="Mot de passe"
+                  label={t('profile.password')}
                   value={password}
                   onChangeText={(v) => { setPassword(v); clearError(); }}
                   mode="outlined"
@@ -185,7 +191,7 @@ export default function ProfilScreen() {
                   disabled={loading}
                   style={styles.authButton}
                 >
-                  {isSignUp ? "S'inscrire" : 'Se connecter'}
+                  {isSignUp ? t('profile.signUpAction') : t('profile.signInAction')}
                 </Button>
 
                 <Button
@@ -193,7 +199,7 @@ export default function ProfilScreen() {
                   onPress={() => { setIsSignUp(!isSignUp); clearError(); }}
                   style={styles.toggleAuth}
                 >
-                  {isSignUp ? 'Déjà un compte ? Se connecter' : "Pas de compte ? S'inscrire"}
+                  {isSignUp ? t('profile.alreadyAccount') : t('profile.noAccount')}
                 </Button>
               </View>
             )}
@@ -204,12 +210,31 @@ export default function ProfilScreen() {
         <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
           <Card.Content>
             <Text variant="titleMedium" style={[styles.settingsTitle, { color: theme.colors.onSurface }]}>
-              Paramètres
+              {t('profile.settings')}
             </Text>
+
+            {/* Language selector */}
+            <View style={styles.settingRow}>
+              <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
+                {t('profile.language')}
+              </Text>
+            </View>
+            <SegmentedButtons
+              value={language}
+              onValueChange={(v) => setLanguage(v as LanguageOption)}
+              buttons={[
+                { value: 'auto', label: t('profile.langAuto') },
+                { value: 'fr', label: t('profile.langFr') },
+                { value: 'en', label: t('profile.langEn') },
+              ]}
+              style={styles.languageToggle}
+            />
+
+            <Divider style={styles.settingDivider} />
 
             <View style={styles.settingRow}>
               <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
-                Mode sombre
+                {t('profile.darkMode')}
               </Text>
               <Switch value={isDarkMode} onValueChange={toggleDarkMode} color={theme.colors.primary} />
             </View>
@@ -220,7 +245,7 @@ export default function ProfilScreen() {
             <View style={styles.settingRow}>
               <View style={styles.settingLabel}>
                 <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
-                  Premium
+                  {t('profile.premium')}
                 </Text>
                 {__DEV__ && (
                   <Chip compact style={styles.devChip} textStyle={{ fontSize: 10 }}>
@@ -236,22 +261,36 @@ export default function ProfilScreen() {
                 <Divider style={styles.settingDivider} />
                 <Button
                   mode="contained"
-                  onPress={() => Alert.alert('Premium', 'Les achats in-app seront disponibles prochainement.')}
+                  onPress={showPurchaseModal}
                   style={styles.premiumButton}
                   icon="star"
                 >
-                  Passer Premium
+                  {t('profile.goPremium')}
                 </Button>
                 <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center', marginTop: 4 }}>
-                  Sans pub · Recettes illimitées · Sync cloud
+                  {t('profile.premiumDescription')}
                 </Text>
+                <Button
+                  mode="text"
+                  onPress={async () => {
+                    const found = await restoreIap();
+                    Alert.alert(
+                      found ? t('profile.syncSuccess') : t('common.error'),
+                      found ? t('profile.restorePurchases') : t('profile.premiumSoon')
+                    );
+                  }}
+                  textColor={theme.colors.onSurfaceVariant}
+                  style={styles.restoreButton}
+                >
+                  {t('profile.restorePurchases')}
+                </Button>
               </>
             )}
           </Card.Content>
         </Card>
 
         <Text variant="bodySmall" style={[styles.version, { color: theme.colors.onSurfaceVariant }]}>
-          Règle de Trois v1.0.0
+          {t('profile.version')}
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -335,12 +374,18 @@ const styles = StyleSheet.create({
   settingDivider: {
     marginVertical: 8,
   },
+  languageToggle: {
+    marginBottom: 8,
+  },
   devChip: {
     height: 20,
   },
   premiumButton: {
     borderRadius: 8,
     marginTop: 8,
+  },
+  restoreButton: {
+    marginTop: 4,
   },
   version: {
     textAlign: 'center',

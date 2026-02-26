@@ -2,17 +2,20 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Button, Card, useTheme } from 'react-native-paper';
 import { useAdsStore } from '../../store/adsStore';
+import { useTranslation } from '../../i18n/useTranslation';
 
 interface PremiumGateProps {
   children: React.ReactNode;
   currentCount: number;
   maxFree: number;
   featureName?: string;
+  onPressPremium?: () => void;
 }
 
-export function PremiumGate({ children, currentCount, maxFree, featureName = 'cette fonctionnalité' }: PremiumGateProps) {
+export function PremiumGate({ children, currentCount, maxFree, featureName, onPressPremium }: PremiumGateProps) {
   const isPremium = useAdsStore((s) => s.isPremium);
   const theme = useTheme();
+  const { t } = useTranslation();
 
   if (isPremium || currentCount < maxFree) {
     return <>{children}</>;
@@ -22,14 +25,13 @@ export function PremiumGate({ children, currentCount, maxFree, featureName = 'ce
     <Card style={[styles.card, { backgroundColor: theme.colors.errorContainer }]}>
       <Card.Content style={styles.content}>
         <Text variant="titleMedium" style={[styles.title, { color: theme.colors.onErrorContainer }]}>
-          Limite atteinte
+          {t('premiumGate.limitReached')}
         </Text>
         <Text variant="bodyMedium" style={[styles.message, { color: theme.colors.onSurfaceVariant }]}>
-          Vous avez atteint la limite de {maxFree} {featureName} gratuit(e)s.
-          Passez Premium pour un accès illimité et sans publicité !
+          {t('premiumGate.limitMessage', { max: maxFree, feature: featureName ?? t('tabs.recipes') })}
         </Text>
-        <Button mode="contained" style={styles.button} onPress={() => {/* TODO: navigate to premium purchase */}}>
-          Passer Premium
+        <Button mode="contained" style={styles.button} onPress={onPressPremium ?? (() => {})}>
+          {t('premiumGate.goPremium')}
         </Button>
       </Card.Content>
     </Card>

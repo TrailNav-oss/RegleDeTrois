@@ -29,6 +29,8 @@ import { scaleIngredients, adjustByIngredient } from '../../src/utils/crossMulti
 import { useRecipeStore } from '../../src/store/recipeStore';
 import { useAdsStore } from '../../src/store/adsStore';
 import { ADS_CONFIG } from '../../src/config/ads';
+import { useTranslation } from '../../src/i18n/useTranslation';
+import { useIapStore } from '../../src/store/iapStore';
 import type { Unit, Ingredient, Recipe } from '../../src/types/recipe';
 
 const UNITS: Unit[] = ['g', 'kg', 'ml', 'L', 'cl', 'pièce', 'c.à.s', 'c.à.c'];
@@ -41,12 +43,14 @@ type RecipeMode = 'classic' | 'adjusted';
 
 export default function RecettesScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   const recipes = useRecipeStore((s) => s.recipes);
   const addRecipe = useRecipeStore((s) => s.addRecipe);
   const updateRecipe = useRecipeStore((s) => s.updateRecipe);
   const deleteRecipe = useRecipeStore((s) => s.deleteRecipe);
   const isPremium = useAdsStore((s) => s.isPremium);
+  const showPurchaseModal = useIapStore((s) => s.showPurchaseModal);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [recipeName, setRecipeName] = useState('');
@@ -58,7 +62,6 @@ export default function RecettesScreen() {
   const [unitMenuVisible, setUnitMenuVisible] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
 
-  // Adjusted mode state
   const [mode, setMode] = useState<RecipeMode>('classic');
   const [driverIngredientId, setDriverIngredientId] = useState<string | null>(null);
   const [adjustedValues, setAdjustedValues] = useState<Record<string, string>>({});
@@ -68,7 +71,6 @@ export default function RecettesScreen() {
 
   const scaledQuantities = scaleIngredients(ingredients, baseParsed, newParsed);
 
-  // Compute adjusted results
   const adjustedResult = useMemo(() => {
     if (mode !== 'adjusted' || !driverIngredientId) return null;
     const driverIndex = ingredients.findIndex((i) => i.id === driverIngredientId);
@@ -114,7 +116,6 @@ export default function RecettesScreen() {
 
   const handleModeChange = (newMode: string) => {
     setMode(newMode as RecipeMode);
-    // Reset adjusted state when switching
     setDriverIngredientId(null);
     setAdjustedValues({});
   };
@@ -132,12 +133,12 @@ export default function RecettesScreen() {
 
   const handleSave = () => {
     if (!recipeName.trim()) {
-      Alert.alert('Erreur', 'Veuillez donner un nom à la recette.');
+      Alert.alert(t('common.error'), t('recipes.errorNoName'));
       return;
     }
     const validIngredients = ingredients.filter((ing) => ing.name.trim() !== '');
     if (validIngredients.length === 0) {
-      Alert.alert('Erreur', 'Ajoutez au moins un ingrédient.');
+      Alert.alert(t('common.error'), t('recipes.errorNoIngredient'));
       return;
     }
 
@@ -173,12 +174,12 @@ export default function RecettesScreen() {
 
   const handleDeleteRecipe = (recipe: Recipe) => {
     Alert.alert(
-      'Supprimer',
-      `Supprimer "${recipe.name}" ?`,
+      t('recipes.delete'),
+      t('recipes.deleteConfirm', { name: recipe.name }),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('recipes.delete'),
           style: 'destructive',
           onPress: () => {
             deleteRecipe(recipe.id);
@@ -214,7 +215,7 @@ export default function RecettesScreen() {
         <View style={styles.ingredientRow}>
           <View style={styles.ingredientFields}>
             <TextInput
-              label="Ingrédient"
+              label={t('recipes.ingredient')}
               value={ingredient.name}
               onChangeText={(v) => updateIngredientField(ingredient.id, 'name', v)}
               mode="outlined"
@@ -224,7 +225,7 @@ export default function RecettesScreen() {
             />
             <View style={styles.qtyUnitRow}>
               <TextInput
-                label="Qté"
+                label={t('recipes.qty')}
                 value={ingredient.qty === 0 ? '' : ingredient.qty.toString()}
                 onChangeText={(v) => {
                   const num = parseFloat(v.replace(',', '.'));
@@ -320,7 +321,7 @@ export default function RecettesScreen() {
                 variant="bodyMedium"
                 style={{ color: theme.colors.onSurface, fontWeight: '600', flex: 1 }}
               >
-                {ingredient.name || 'Sans nom'}
+                {ingredient.name || t('recipes.noName')}
               </Text>
               {isDriver && adjustedResult && (
                 <Chip
@@ -334,12 +335,12 @@ export default function RecettesScreen() {
             </View>
 
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              base : {ingredient.qty} {ingredient.unit}
+              {t('recipes.baseLabel', { qty: ingredient.qty, unit: ingredient.unit })}
             </Text>
 
             <View style={styles.qtyUnitRow}>
               <TextInput
-                label={canDrive ? 'Nouvelle qté' : 'Qté (base = 0)'}
+                label={canDrive ? t('recipes.newQty') : t('recipes.qtyBaseZero')}
                 value={displayQty}
                 onChangeText={(v) => {
                   if (!canDrive) return;
@@ -374,28 +375,35 @@ export default function RecettesScreen() {
     );
   };
 
-  const renderRecipeItem = ({ item }: { item: Recipe }) => (
-    <TouchableOpacity onPress={() => handleLoadRecipe(item)} activeOpacity={0.7}>
-      <Card style={[styles.recipeListCard, { backgroundColor: theme.colors.surface }]}>
-        <View style={styles.recipeListRow}>
-          <View style={styles.recipeListInfo}>
-            <Text variant="titleSmall" style={{ color: theme.colors.onSurface }}>
-              {item.name}
-            </Text>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              {item.ingredients.length} ingrédient{item.ingredients.length > 1 ? 's' : ''} · {item.basePortions} portions
-            </Text>
+  const renderRecipeItem = ({ item }: { item: Recipe }) => {
+    const ingCount = item.ingredients.length;
+    const ingLabel = ingCount > 1
+      ? t('recipes.ingredientCountPlural', { count: ingCount })
+      : t('recipes.ingredientCount', { count: ingCount });
+
+    return (
+      <TouchableOpacity onPress={() => handleLoadRecipe(item)} activeOpacity={0.7}>
+        <Card style={[styles.recipeListCard, { backgroundColor: theme.colors.surface }]}>
+          <View style={styles.recipeListRow}>
+            <View style={styles.recipeListInfo}>
+              <Text variant="titleSmall" style={{ color: theme.colors.onSurface }}>
+                {item.name}
+              </Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                {ingLabel} · {t('recipes.portionCount', { count: item.basePortions })}
+              </Text>
+            </View>
+            <IconButton
+              icon="delete-outline"
+              size={20}
+              onPress={() => handleDeleteRecipe(item)}
+              iconColor={theme.colors.error}
+            />
           </View>
-          <IconButton
-            icon="delete-outline"
-            size={20}
-            onPress={() => handleDeleteRecipe(item)}
-            iconColor={theme.colors.error}
-          />
-        </View>
-      </Card>
-    </TouchableOpacity>
-  );
+        </Card>
+      </TouchableOpacity>
+    );
+  };
 
   // Recipe list view
   if (!showEditor) {
@@ -404,11 +412,11 @@ export default function RecettesScreen() {
         <View style={styles.flex}>
           <View style={styles.listHeader}>
             <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.primary }]}>
-              Mes Recettes
+              {t('recipes.title')}
             </Text>
             {!isPremium && (
               <Chip icon="information" style={styles.counterChip} textStyle={{ fontSize: 12 }}>
-                {recipes.length}/{ADS_CONFIG.MAX_FREE_RECIPES} gratuites
+                {t('recipes.freeCount', { count: recipes.length, max: ADS_CONFIG.MAX_FREE_RECIPES })}
               </Chip>
             )}
           </View>
@@ -416,8 +424,8 @@ export default function RecettesScreen() {
           {recipes.length === 0 ? (
             <EmptyState
               icon="book-open-blank-variant"
-              title="Aucune recette"
-              message="Créez votre première recette pour commencer à convertir vos ingrédients !"
+              title={t('recipes.noRecipes')}
+              message={t('recipes.noRecipesMessage')}
             />
           ) : (
             <FlatList
@@ -431,7 +439,8 @@ export default function RecettesScreen() {
           <PremiumGate
             currentCount={recipes.length}
             maxFree={ADS_CONFIG.MAX_FREE_RECIPES}
-            featureName="recettes"
+            featureName={t('tabs.recipes').toLowerCase()}
+            onPressPremium={showPurchaseModal}
           >
             <Button
               mode="contained"
@@ -439,7 +448,7 @@ export default function RecettesScreen() {
               icon="plus"
               style={styles.newRecipeButton}
             >
-              Nouvelle recette
+              {t('recipes.newRecipe')}
             </Button>
           </PremiumGate>
         </View>
@@ -469,12 +478,12 @@ export default function RecettesScreen() {
               iconColor={theme.colors.onBackground}
             />
             <Text variant="titleLarge" style={[styles.editorTitle, { color: theme.colors.onBackground }]}>
-              {editingId ? 'Modifier' : 'Nouvelle recette'}
+              {editingId ? t('recipes.edit') : t('recipes.newRecipe')}
             </Text>
           </View>
 
           <TextInput
-            label="Nom de la recette"
+            label={t('recipes.recipeName')}
             value={recipeName}
             onChangeText={setRecipeName}
             mode="outlined"
@@ -488,8 +497,8 @@ export default function RecettesScreen() {
               value={mode}
               onValueChange={handleModeChange}
               buttons={[
-                { value: 'classic', label: 'Classique', icon: 'arrow-right' },
-                { value: 'adjusted', label: 'Ajusté', icon: 'swap-horizontal' },
+                { value: 'classic', label: t('recipes.classic'), icon: 'arrow-right' },
+                { value: 'adjusted', label: t('recipes.adjusted'), icon: 'swap-horizontal' },
               ]}
               style={styles.modeToggle}
             />
@@ -499,7 +508,7 @@ export default function RecettesScreen() {
           {mode === 'classic' ? (
             <View style={styles.portionsRow}>
               <TextInput
-                label="Portions de base"
+                label={t('recipes.basePortions')}
                 value={basePortions}
                 onChangeText={setBasePortions}
                 keyboardType="numeric"
@@ -512,7 +521,7 @@ export default function RecettesScreen() {
                 →
               </Text>
               <TextInput
-                label="Nouvelles portions"
+                label={t('recipes.newPortions')}
                 value={newPortions}
                 onChangeText={setNewPortions}
                 keyboardType="numeric"
@@ -526,7 +535,7 @@ export default function RecettesScreen() {
             <Card style={[styles.portionsCard, { backgroundColor: theme.colors.secondaryContainer }]}>
               <Card.Content style={styles.portionsCardContent}>
                 <Text variant="bodyMedium" style={{ color: theme.colors.onSecondaryContainer }}>
-                  Portions de base : {baseParsed}
+                  {t('recipes.basePortionsLabel', { count: baseParsed })}
                 </Text>
                 {adjustedResult ? (
                   <View style={styles.adjustedPortionsRow}>
@@ -534,7 +543,7 @@ export default function RecettesScreen() {
                       variant="headlineSmall"
                       style={{ color: theme.colors.primary, fontWeight: 'bold' }}
                     >
-                      {adjustedResult.portions} portions
+                      {t('recipes.portions', { count: adjustedResult.portions })}
                     </Text>
                     <Chip
                       compact
@@ -546,7 +555,7 @@ export default function RecettesScreen() {
                   </View>
                 ) : (
                   <Text variant="bodySmall" style={{ color: theme.colors.onSecondaryContainer }}>
-                    Modifiez un ingrédient pour recalculer
+                    {t('recipes.modifyIngredient')}
                   </Text>
                 )}
               </Card.Content>
@@ -556,7 +565,7 @@ export default function RecettesScreen() {
           <Divider style={styles.divider} />
 
           <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>
-            Ingrédients
+            {t('recipes.ingredients')}
           </Text>
 
           {mode === 'classic'
@@ -571,7 +580,7 @@ export default function RecettesScreen() {
               icon="plus"
               style={styles.addButton}
             >
-              Ajouter un ingrédient
+              {t('recipes.addIngredient')}
             </Button>
           )}
 
@@ -585,7 +594,7 @@ export default function RecettesScreen() {
               style={styles.actionButton}
               textColor={theme.colors.onSurfaceVariant}
             >
-              Annuler
+              {t('recipes.cancel')}
             </Button>
             <Button
               mode="contained"
@@ -593,7 +602,7 @@ export default function RecettesScreen() {
               style={styles.actionButton}
               icon="content-save"
             >
-              Sauvegarder
+              {t('recipes.save')}
             </Button>
           </View>
         </ScrollView>

@@ -6,36 +6,27 @@ import {
   FlatList,
   type ViewToken,
 } from 'react-native';
-import { Text, Button, useTheme } from 'react-native-paper';
+import { Text, Button, useTheme, Icon } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useOnboardingStore } from '../../store/onboardingStore';
+import { useTranslation } from '../../i18n/useTranslation';
 
 const { width } = Dimensions.get('window');
 
-const slides = [
-  {
-    icon: 'calculator-variant',
-    title: 'Règle de trois simple',
-    description: 'Remplissez 3 valeurs, la 4e se calcule instantanément. Simple, rapide, efficace.',
-  },
-  {
-    icon: 'book-open-variant',
-    title: 'Convertissez vos recettes',
-    description: 'Ajustez les quantités de vos ingrédients en changeant le nombre de portions.',
-  },
-  {
-    icon: 'star-outline',
-    title: 'Gratuit avec pubs',
-    description: 'Profitez de l\'app gratuitement. Passez Premium pour un accès illimité sans publicité.',
-  },
-];
+const slideIcons = ['calculator-variant', 'book-open-variant', 'star-outline'];
 
 export function OnboardingScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const completeOnboarding = useOnboardingStore((s) => s.completeOnboarding);
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+
+  const slides = [
+    { icon: slideIcons[0], title: t('onboarding.slide1Title'), description: t('onboarding.slide1Desc') },
+    { icon: slideIcons[1], title: t('onboarding.slide2Title'), description: t('onboarding.slide2Desc') },
+    { icon: slideIcons[2], title: t('onboarding.slide3Title'), description: t('onboarding.slide3Desc') },
+  ];
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -69,8 +60,8 @@ export function OnboardingScreen() {
         renderItem={({ item }) => (
           <View style={styles.slide}>
             <View style={[styles.iconCircle, { backgroundColor: theme.colors.primaryContainer }]}>
-              <MaterialCommunityIcons
-                name={item.icon}
+              <Icon
+                source={item.icon}
                 size={64}
                 color={theme.colors.primary}
               />
@@ -105,11 +96,11 @@ export function OnboardingScreen() {
         <View style={styles.buttons}>
           {currentIndex < slides.length - 1 && (
             <Button mode="text" onPress={completeOnboarding} textColor={theme.colors.onSurfaceVariant}>
-              Passer
+              {t('onboarding.skip')}
             </Button>
           )}
           <Button mode="contained" onPress={goNext} style={styles.nextButton}>
-            {currentIndex === slides.length - 1 ? 'Commencer' : 'Suivant'}
+            {currentIndex === slides.length - 1 ? t('onboarding.start') : t('onboarding.next')}
           </Button>
         </View>
       </View>

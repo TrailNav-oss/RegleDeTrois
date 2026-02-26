@@ -14,24 +14,24 @@ export function solveCrossMultiply(fields: {
   const nullCount = [a, b, c, x].filter((v) => v === null).length;
 
   if (nullCount !== 1) {
-    return { error: 'Exactement un champ doit être vide.' };
+    return { error: 'EXACTLY_ONE_EMPTY' };
   }
 
   // A/B = C/X → A*X = B*C
   if (a === null) {
-    if (x === 0) return { error: 'Division par zéro impossible.' };
+    if (x === 0) return { error: 'DIVISION_BY_ZERO' };
     return { field: 'a', value: (b! * c!) / x! };
   }
   if (b === null) {
-    if (c === 0) return { error: 'Division par zéro impossible.' };
+    if (c === 0) return { error: 'DIVISION_BY_ZERO' };
     return { field: 'b', value: (a! * x!) / c! };
   }
   if (c === null) {
-    if (b === 0) return { error: 'Division par zéro impossible.' };
+    if (b === 0) return { error: 'DIVISION_BY_ZERO' };
     return { field: 'c', value: (a! * x!) / b! };
   }
   // x === null
-  if (a === 0) return { error: 'Division par zéro impossible.' };
+  if (a === 0) return { error: 'DIVISION_BY_ZERO' };
   return { field: 'x', value: (b! * c!) / a! };
 }
 

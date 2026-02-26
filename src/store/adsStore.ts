@@ -10,6 +10,7 @@ interface AdsState {
   shouldShowInterstitial: () => boolean;
   resetCount: () => void;
   togglePremium: () => void;
+  setPremium: (value: boolean) => void;
 }
 
 export const useAdsStore = create<AdsState>()(
@@ -31,6 +32,8 @@ export const useAdsStore = create<AdsState>()(
       resetCount: () => set({ calcCount: 0 }),
 
       togglePremium: () => set((state) => ({ isPremium: !state.isPremium })),
+
+      setPremium: (value) => set({ isPremium: value }),
     }),
     {
       name: 'ads-store',

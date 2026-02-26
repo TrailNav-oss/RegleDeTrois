@@ -76,4 +76,12 @@ describe('adsStore', () => {
     useAdsStore.getState().togglePremium();
     expect(useAdsStore.getState().isPremium).toBe(false);
   });
+
+  it('sets premium explicitly', () => {
+    expect(useAdsStore.getState().isPremium).toBe(false);
+    useAdsStore.getState().setPremium(true);
+    expect(useAdsStore.getState().isPremium).toBe(true);
+    useAdsStore.getState().setPremium(false);
+    expect(useAdsStore.getState().isPremium).toBe(false);
+  });
 });

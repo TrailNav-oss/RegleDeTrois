@@ -24,8 +24,11 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.regledetrois.app",
-      "versionCode": 1,
-      "predictiveBackGestureEnabled": false
+      "versionCode": 8,
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.ACTIVITY_RECOGNITION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",

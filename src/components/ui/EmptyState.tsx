@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Text, useTheme, Icon } from 'react-native-paper';
 
 interface EmptyStateProps {
   icon: string;
@@ -14,8 +13,8 @@ export function EmptyState({ icon, title, message }: EmptyStateProps) {
 
   return (
     <View style={styles.container}>
-      <MaterialCommunityIcons
-        name={icon}
+      <Icon
+        source={icon}
         size={64}
         color={theme.colors.outlineVariant}
       />
