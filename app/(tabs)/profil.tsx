@@ -23,6 +23,7 @@ import { PremiumGate } from '../../src/components/ads/PremiumGate';
 import { syncRecipes } from '../../src/utils/syncService';
 import { useTranslation } from '../../src/i18n/useTranslation';
 import { useIapStore } from '../../src/store/iapStore';
+import { APP_VERSION } from '../../src/config/version';
 
 export default function ProfilScreen() {
   const theme = useTheme();
@@ -311,7 +312,8 @@ export default function ProfilScreen() {
         </Card>
 
         <Text variant="bodySmall" style={[styles.version, { color: theme.colors.onSurfaceVariant }]}>
-          {t('profile.version')}
+          v{APP_VERSION.label} (build {APP_VERSION.build})
+          {__DEV__ ? ` — ${APP_VERSION.channel}` : ''}
         </Text>
       </ScrollView>
     </SafeAreaView>

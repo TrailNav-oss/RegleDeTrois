@@ -3,6 +3,7 @@
     "name": "Règle de Trois",
     "slug": "regle-de-trois",
     "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -14,7 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.regledetrois.app"
+      "bundleIdentifier": "com.regledetrois.app",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +26,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.regledetrois.app",
-      "versionCode": 8,
+      "versionCode": 1,
       "predictiveBackGestureEnabled": false,
       "blockedPermissions": [
         "android.permission.ACTIVITY_RECOGNITION"
