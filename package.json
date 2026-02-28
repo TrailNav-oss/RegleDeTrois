@@ -7,7 +7,12 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "jest"
+    "test": "jest",
+    "check": "npx tsc --noEmit && npx jest --passWithNoTests --silent",
+    "bump": "node scripts/bump-version.js",
+    "deploy": "node scripts/deploy.js",
+    "play:status": "node scripts/play-status.js",
+    "build:info": "node scripts/gen-build-info.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

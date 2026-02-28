@@ -40,6 +40,9 @@ google-play-service-account.json
 # Build outputs
 /builds/
 
+# Auto-generated build info
+src/config/buildInfo.ts
+
 # typescript
 *.tsbuildinfo
 

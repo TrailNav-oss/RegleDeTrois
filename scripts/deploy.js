@@ -5,12 +5,17 @@ const path = require("path");
 
 const KEY_FILE = path.resolve(__dirname, "../google-play-service-account.json");
 const PACKAGE_NAME = "com.regledetrois.app";
-const [,, aabPath, track = "internal", ...notesParts] = process.argv;
+const rawArgs = process.argv.slice(2);
+const isDraft = rawArgs.includes("--draft");
+const filteredArgs = rawArgs.filter(a => a !== "--draft");
+const [aabPath, track = "internal", ...notesParts] = filteredArgs;
 const notes = notesParts.join(" ") || "Mise à jour";
+const releaseStatus = isDraft ? "draft" : "completed";
 
 if (!aabPath) {
-  console.error("Usage: node scripts/deploy.js <path-to.aab> [track] [release notes...]");
+  console.error("Usage: node scripts/deploy.js <path-to.aab> [track] [release notes...] [--draft]");
   console.error("  track: internal (default), alpha, beta, production");
+  console.error("  --draft: upload as draft (no automatic rollout)");
   process.exit(1);
 }
 
@@ -54,7 +59,7 @@ if (!fs.existsSync(aabPath)) {
         track,
         releases: [{
           versionCodes: [bundle.versionCode],
-          status: "completed",
+          status: releaseStatus,
           releaseNotes: [{ language: "fr-FR", text: notes }],
         }],
       },
@@ -62,7 +67,7 @@ if (!fs.existsSync(aabPath)) {
 
     // 4. Commit
     await api.edits.commit({ packageName: PACKAGE_NAME, editId: edit.id });
-    console.log(`Déployé sur ${track}`);
+    console.log(`Déployé sur ${track} (status: ${releaseStatus})`);
   } catch (err) {
     console.error("Erreur deploy:", err.message);
     if (err.message.includes("draft")) {
