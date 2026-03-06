@@ -15,5 +15,4 @@ export interface Recipe {
   ingredients: Ingredient[];
   createdAt: number;
   updatedAt: number;
-  syncedToCloud?: boolean;
 }

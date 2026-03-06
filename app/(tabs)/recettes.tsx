@@ -8,6 +8,7 @@ import {
   Alert,
   FlatList,
   TouchableOpacity,
+  Share,
 } from 'react-native';
 import {
   Text,
@@ -200,6 +201,28 @@ export default function RecettesScreen() {
   const handleNewRecipe = () => {
     handleReset();
     setShowEditor(true);
+  };
+
+  const handleShareRecipe = async () => {
+    const name = recipeName.trim() || t('recipes.noName');
+    const validIngredients = ingredients.filter((ing) => ing.name.trim() !== '');
+    const portions = mode === 'classic' ? newParsed : (adjustedResult?.portions ?? baseParsed);
+    const lines = validIngredients.map((ing, i) => {
+      let qty: number;
+      if (mode === 'classic') {
+        qty = scaledQuantities[i];
+      } else if (adjustedResult) {
+        qty = adjustedResult.quantities[i];
+      } else {
+        qty = ing.qty;
+      }
+      const qtyStr = Number.isInteger(qty) ? qty.toString() : qty.toFixed(1);
+      return `• ${ing.name}: ${qtyStr} ${ing.unit}`;
+    });
+    const text = `${name} (${t('recipes.shareFor', { count: portions })})\n\n${lines.join('\n')}\n\n— Proportio`;
+    try {
+      await Share.share({ message: text });
+    } catch { /* user cancelled */ }
   };
 
   const formatRatio = (r: number): string => {
@@ -627,6 +650,17 @@ export default function RecettesScreen() {
             >
               {t('recipes.cancel')}
             </Button>
+            {editingId && (
+              <Button
+                mode="outlined"
+                onPress={handleShareRecipe}
+                style={styles.actionButton}
+                icon="share-variant"
+                textColor={theme.colors.primary}
+              >
+                {t('recipes.share')}
+              </Button>
+            )}
             <Button
               mode="contained"
               onPress={handleSave}

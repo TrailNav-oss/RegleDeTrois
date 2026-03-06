@@ -54,6 +54,8 @@ export const fr = {
     addIngredient: 'Ajouter un ingrédient',
     cancel: 'Annuler',
     save: 'Sauvegarder',
+    share: 'Partager',
+    shareFor: 'pour %{count} portions',
     delete: 'Supprimer',
     deleteConfirm: 'Supprimer "%{name}" ?',
     errorNoName: 'Veuillez donner un nom à la recette.',
