@@ -14,12 +14,14 @@ import { useConsentManager } from '../src/components/ads/ConsentManager';
 import { OnboardingScreen } from '../src/components/ui/OnboardingScreen';
 import { PurchaseModal } from '../src/components/iap/PurchaseModal';
 import { checkForUpdate, reloadApp } from '../src/services/updateChecker';
+import { useTranslation } from '../src/i18n/useTranslation';
 
 try { initSentry(); } catch {}
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   useConsentManager();
+  const { t } = useTranslation();
 
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
@@ -38,9 +40,9 @@ export default function RootLayout() {
     const timer = setTimeout(() => {
       checkForUpdate().then((r) => {
         if (r.ready) {
-          Alert.alert('Mise a jour', 'Une nouvelle version est disponible. Redemarrer ?', [
-            { text: 'Plus tard' },
-            { text: 'OK', onPress: () => reloadApp() },
+          Alert.alert(t('profile.updateAvailable'), t('profile.updateRestart'), [
+            { text: t('profile.updateLater') },
+            { text: t('profile.updateReady'), onPress: () => reloadApp() },
           ]);
         }
       }).catch(() => {});
@@ -48,6 +50,7 @@ export default function RootLayout() {
 
     setReady(true);
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onLayoutReady = useCallback(async () => {
