@@ -36,6 +36,7 @@ export default function SimpleScreen() {
   const [resultField, setResultField] = useState<FieldKey | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [snackVisible, setSnackVisible] = useState(false);
+  const [historySearch, setHistorySearch] = useState('');
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const incrementCalc = useAdsStore((s) => s.incrementCalc);
@@ -296,7 +297,27 @@ export default function SimpleScreen() {
                   iconColor={theme.colors.error}
                 />
               </View>
-              {historyEntries.map((entry) => {
+              {historyEntries.length > 3 && (
+                <TextInput
+                  placeholder={t('calculator.searchHistory')}
+                  value={historySearch}
+                  onChangeText={setHistorySearch}
+                  mode="outlined"
+                  dense
+                  left={<TextInput.Icon icon="magnify" size={18} />}
+                  right={historySearch ? <TextInput.Icon icon="close" size={18} onPress={() => setHistorySearch('')} /> : undefined}
+                  style={styles.searchInput}
+                  outlineColor={COLORS.border}
+                  activeOutlineColor={theme.colors.primary}
+                  outlineStyle={{ borderRadius: RADIUS.md }}
+                />
+              )}
+              {historyEntries.filter((entry) => {
+                if (!historySearch.trim()) return true;
+                const q = historySearch.trim().toLowerCase();
+                const fmt = (n: number) => n.toString();
+                return fmt(entry.a).includes(q) || fmt(entry.b).includes(q) || fmt(entry.c).includes(q) || fmt(entry.x).includes(q);
+              }).map((entry) => {
                 const fmt = (n: number) =>
                   Number.isInteger(n) ? n.toString() : n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
                 return (
@@ -395,6 +416,7 @@ const styles = StyleSheet.create({
   historySection: { marginTop: SPACING.xxl },
   historyHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.sm },
   historyTitle: { fontSize: 16, fontWeight: '600', color: COLORS.textPrimary },
+  searchInput: { marginBottom: SPACING.md, backgroundColor: COLORS.surface, fontSize: 14 },
   swipeDelete: { justifyContent: 'center', alignItems: 'center', width: 56, borderRadius: RADIUS.md, marginBottom: SPACING.sm },
   historyItem: { backgroundColor: COLORS.surface, borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.border, padding: SPACING.md, marginBottom: SPACING.sm },
   historyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

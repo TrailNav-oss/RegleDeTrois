@@ -518,31 +518,50 @@ export default function RecettesScreen() {
 
           {/* Portions section */}
           {mode === 'classic' ? (
-            <View style={styles.portionsRow}>
-              <TextInput
-                label={t('recipes.basePortions')}
-                value={basePortions}
-                onChangeText={setBasePortions}
-                keyboardType="numeric"
-                mode="outlined"
-                dense
-                style={styles.portionInput}
-                activeOutlineColor={theme.colors.primary}
-              />
-              <Text variant="headlineSmall" style={{ color: theme.colors.primary, marginHorizontal: 12 }}>
-                →
-              </Text>
-              <TextInput
-                label={t('recipes.newPortions')}
-                value={newPortions}
-                onChangeText={setNewPortions}
-                keyboardType="numeric"
-                mode="outlined"
-                dense
-                style={styles.portionInput}
-                activeOutlineColor={theme.colors.primary}
-              />
-            </View>
+            <>
+              <View style={styles.portionsRow}>
+                <TextInput
+                  label={t('recipes.basePortions')}
+                  value={basePortions}
+                  onChangeText={setBasePortions}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  dense
+                  style={styles.portionInput}
+                  activeOutlineColor={theme.colors.primary}
+                />
+                <Text variant="headlineSmall" style={{ color: theme.colors.primary, marginHorizontal: 12 }}>
+                  →
+                </Text>
+                <TextInput
+                  label={t('recipes.newPortions')}
+                  value={newPortions}
+                  onChangeText={setNewPortions}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  dense
+                  style={styles.portionInput}
+                  activeOutlineColor={theme.colors.primary}
+                />
+              </View>
+              {/* Quick multiply buttons */}
+              <View style={styles.quickMultiplyRow}>
+                {[0.5, 2, 3].map((factor) => (
+                  <Chip
+                    key={factor}
+                    onPress={() => {
+                      const newVal = Math.round(baseParsed * factor);
+                      if (newVal > 0) setNewPortions(newVal.toString());
+                    }}
+                    compact
+                    style={styles.quickMultiplyChip}
+                    textStyle={styles.quickMultiplyText}
+                  >
+                    ×{factor}
+                  </Chip>
+                ))}
+              </View>
+            </>
           ) : (
             <Card style={[styles.portionsCard, { backgroundColor: theme.colors.secondaryContainer }]}>
               <Card.Content style={styles.portionsCardContent}>
@@ -698,6 +717,19 @@ const styles = StyleSheet.create({
   },
   portionInput: {
     flex: 1,
+  },
+  quickMultiplyRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  quickMultiplyChip: {
+    borderRadius: 16,
+  },
+  quickMultiplyText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   portionsCard: {
     borderRadius: 14,
