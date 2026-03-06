@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, StyleSheet, ScrollView, Alert, Pressable } from 'react-native';
 import {
   Text,
   TextInput,
@@ -8,35 +8,29 @@ import {
   Card,
   Switch,
   Divider,
-  ActivityIndicator,
   Chip,
   SegmentedButtons,
+  Portal,
+  Modal,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuthStore } from '../../src/store/authStore';
 import { useAdsStore } from '../../src/store/adsStore';
 import { useThemeStore } from '../../src/store/themeStore';
-import { useRecipeStore } from '../../src/store/recipeStore';
 import { useLanguageStore, type LanguageOption } from '../../src/store/languageStore';
 import { useUnitsStore, type UnitSystem } from '../../src/store/unitsStore';
-import { PremiumGate } from '../../src/components/ads/PremiumGate';
-import { syncRecipes } from '../../src/utils/syncService';
 import { useTranslation } from '../../src/i18n/useTranslation';
 import { useIapStore } from '../../src/store/iapStore';
-import { APP_VERSION } from '../../src/config/version';
-import { APP_VERSION as appVersion, BUILD_NUMBER } from '../../src/config/app';
+import { APP_VERSION, BUILD_NUMBER } from '../../src/config/app';
 import { checkForUpdate, reloadApp } from '../../src/services/updateChecker';
 
 export default function ProfilScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
 
-  const { user, loading, error, signIn, signUp, logout, clearError, initAuth, initialized } = useAuthStore();
   const isPremium = useAdsStore((s) => s.isPremium);
   const togglePremium = useAdsStore((s) => s.togglePremium);
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
   const toggleDarkMode = useThemeStore((s) => s.toggleDarkMode);
-  const recipes = useRecipeStore((s) => s.recipes);
   const language = useLanguageStore((s) => s.language);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
   const unitSystem = useUnitsStore((s) => s.unitSystem);
@@ -44,52 +38,37 @@ export default function ProfilScreen() {
   const showPurchaseModal = useIapStore((s) => s.showPurchaseModal);
   const restoreIap = useIapStore((s) => s.restore);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [devUnlocked, setDevUnlocked] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [devPassword, setDevPassword] = useState('');
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    const unsubscribe = initAuth();
-    return unsubscribe;
-  }, [initAuth]);
+  const DEV_PASSWORD = '12334566';
 
-  const handleAuth = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert(t('profile.error'), t('profile.fillAllFields'));
-      return;
-    }
-    if (isSignUp) {
-      await signUp(email.trim(), password);
-    } else {
-      await signIn(email.trim(), password);
+  const handleVersionTap = () => {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => { tapCountRef.current = 0; }, 2000);
+
+    if (tapCountRef.current >= 7) {
+      tapCountRef.current = 0;
+      if (!devUnlocked) {
+        setShowPasswordModal(true);
+        setDevPassword('');
+      }
     }
   };
 
-  const handleSync = async () => {
-    if (!user) return;
-    if (!isPremium) {
-      Alert.alert(t('profile.premiumRequired'), t('profile.premiumRequiredSync'));
-      return;
-    }
-    setSyncing(true);
-    try {
-      const merged = await syncRecipes(user.uid, recipes);
-      const store = useRecipeStore.getState();
-      for (const r of store.recipes) {
-        store.deleteRecipe(r.id);
-      }
-      for (const r of merged) {
-        useRecipeStore.setState((state) => ({
-          recipes: [...state.recipes.filter((x) => x.id !== r.id), r],
-        }));
-      }
-      Alert.alert(t('profile.syncSuccess'), t('profile.syncCount', { count: merged.length }));
-    } catch (err: any) {
-      Alert.alert(t('profile.syncError'), err.message || t('profile.syncErrorMessage'));
-    } finally {
-      setSyncing(false);
+  const handleDevPasswordSubmit = () => {
+    if (devPassword === DEV_PASSWORD) {
+      setDevUnlocked(true);
+      setShowPasswordModal(false);
+      setDevPassword('');
+    } else {
+      Alert.alert(t('common.error'), t('profile.wrongPassword'));
+      setDevPassword('');
     }
   };
 
@@ -112,125 +91,12 @@ export default function ProfilScreen() {
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert(t('profile.logout'), t('profile.logoutConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('profile.logoutAction'), style: 'destructive', onPress: logout },
-    ]);
-  };
-
-  if (!initialized) {
-    return (
-      <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.primary }]}>
           {t('profile.title')}
         </Text>
-
-        {/* Auth Section */}
-        <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-          <Card.Content>
-            {user ? (
-              <View style={styles.loggedInSection}>
-                <View style={styles.userInfoRow}>
-                  <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>
-                    {t('profile.connected')}
-                  </Text>
-                  <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                    {user.email}
-                  </Text>
-                </View>
-
-                <View style={styles.syncSection}>
-                  {isPremium ? (
-                    <Button
-                      mode="contained-tonal"
-                      onPress={handleSync}
-                      loading={syncing}
-                      disabled={syncing}
-                      icon="cloud-sync"
-                      style={styles.syncButton}
-                    >
-                      {t('profile.sync', { count: recipes.length })}
-                    </Button>
-                  ) : (
-                    <View style={[styles.syncGate, { backgroundColor: theme.colors.secondaryContainer }]}>
-                      <Text variant="bodyMedium" style={{ color: theme.colors.onSecondaryContainer, textAlign: 'center' }}>
-                        {t('profile.syncPremiumRequired')}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <Button
-                  mode="outlined"
-                  onPress={handleLogout}
-                  textColor={theme.colors.error}
-                  style={styles.logoutButton}
-                >
-                  {t('profile.logout')}
-                </Button>
-              </View>
-            ) : (
-              <View style={styles.authForm}>
-                <Text variant="titleMedium" style={[styles.authTitle, { color: theme.colors.onSurface }]}>
-                  {isSignUp ? t('profile.createAccount') : t('profile.login')}
-                </Text>
-
-                <TextInput
-                  label={t('profile.email')}
-                  value={email}
-                  onChangeText={(v) => { setEmail(v); clearError(); }}
-                  mode="outlined"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  style={styles.authInput}
-                  activeOutlineColor={theme.colors.primary}
-                />
-                <TextInput
-                  label={t('profile.password')}
-                  value={password}
-                  onChangeText={(v) => { setPassword(v); clearError(); }}
-                  mode="outlined"
-                  secureTextEntry
-                  style={styles.authInput}
-                  activeOutlineColor={theme.colors.primary}
-                />
-
-                {error && (
-                  <Text variant="bodySmall" style={{ color: theme.colors.error, marginBottom: 8 }}>
-                    {error}
-                  </Text>
-                )}
-
-                <Button
-                  mode="contained"
-                  onPress={handleAuth}
-                  loading={loading}
-                  disabled={loading}
-                  style={styles.authButton}
-                >
-                  {isSignUp ? t('profile.signUpAction') : t('profile.signInAction')}
-                </Button>
-
-                <Button
-                  mode="text"
-                  onPress={() => { setIsSignUp(!isSignUp); clearError(); }}
-                  style={styles.toggleAuth}
-                >
-                  {isSignUp ? t('profile.alreadyAccount') : t('profile.noAccount')}
-                </Button>
-              </View>
-            )}
-          </Card.Content>
-        </Card>
 
         {/* Settings Section */}
         <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
@@ -282,27 +148,28 @@ export default function ProfilScreen() {
               </Text>
               <Switch value={isDarkMode} onValueChange={toggleDarkMode} color={theme.colors.primary} />
             </View>
+          </Card.Content>
+        </Card>
 
-            <Divider style={styles.settingDivider} />
-
-            {/* Premium toggle (dev only) */}
-            <View style={styles.settingRow}>
-              <View style={styles.settingLabel}>
-                <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
-                  {t('profile.premium')}
-                </Text>
-                {__DEV__ && (
+        {/* Premium Section */}
+        <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+          <Card.Content>
+            {(devUnlocked || __DEV__) && (
+              <View style={styles.settingRow}>
+                <View style={styles.settingLabel}>
+                  <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: '600' }}>
+                    {t('profile.premium')}
+                  </Text>
                   <Chip compact style={styles.devChip} textStyle={{ fontSize: 10 }}>
                     DEV
                   </Chip>
-                )}
+                </View>
+                <Switch value={isPremium} onValueChange={togglePremium} color={theme.colors.primary} />
               </View>
-              <Switch value={isPremium} onValueChange={togglePremium} color={theme.colors.primary} />
-            </View>
+            )}
 
             {!isPremium && (
               <>
-                <Divider style={styles.settingDivider} />
                 <Button
                   mode="contained"
                   onPress={showPurchaseModal}
@@ -345,20 +212,22 @@ export default function ProfilScreen() {
                 {t('profile.appVersion')}
               </Text>
               <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-                {appVersion}
+                {APP_VERSION}
               </Text>
             </View>
 
             <Divider style={styles.settingDivider} />
 
-            <View style={styles.aboutRow}>
-              <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
-                {t('profile.buildNumber')}
-              </Text>
-              <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-                {BUILD_NUMBER}
-              </Text>
-            </View>
+            <Pressable onPress={handleVersionTap}>
+              <View style={styles.aboutRow}>
+                <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
+                  {t('profile.buildNumber')}
+                </Text>
+                <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
+                  {BUILD_NUMBER}
+                </Text>
+              </View>
+            </Pressable>
 
             <Divider style={styles.settingDivider} />
 
@@ -375,6 +244,36 @@ export default function ProfilScreen() {
           </Card.Content>
         </Card>
       </ScrollView>
+
+      <Portal>
+        <Modal
+          visible={showPasswordModal}
+          onDismiss={() => { setShowPasswordModal(false); setDevPassword(''); }}
+          contentContainerStyle={[styles.modalContent, { backgroundColor: theme.colors.surface }]}
+        >
+          <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginBottom: 16 }}>
+            Mode développeur
+          </Text>
+          <TextInput
+            label="Mot de passe"
+            value={devPassword}
+            onChangeText={setDevPassword}
+            mode="outlined"
+            secureTextEntry
+            autoFocus
+            activeOutlineColor={theme.colors.primary}
+            onSubmitEditing={handleDevPasswordSubmit}
+          />
+          <View style={styles.modalActions}>
+            <Button onPress={() => { setShowPasswordModal(false); setDevPassword(''); }}>
+              {t('common.cancel')}
+            </Button>
+            <Button mode="contained" onPress={handleDevPasswordSubmit}>
+              {t('common.ok')}
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
     </SafeAreaView>
   );
 }
@@ -382,11 +281,6 @@ export default function ProfilScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   scrollContent: {
     padding: 20,
@@ -401,42 +295,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     elevation: 2,
     marginBottom: 20,
-  },
-  loggedInSection: {
-    gap: 16,
-  },
-  userInfoRow: {
-    gap: 4,
-  },
-  syncSection: {
-    gap: 8,
-  },
-  syncButton: {
-    borderRadius: 8,
-  },
-  syncGate: {
-    padding: 12,
-    borderRadius: 8,
-  },
-  logoutButton: {
-    borderRadius: 8,
-  },
-  authForm: {
-    gap: 4,
-  },
-  authTitle: {
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  authInput: {
-    marginBottom: 8,
-  },
-  authButton: {
-    borderRadius: 8,
-    marginTop: 4,
-  },
-  toggleAuth: {
-    marginTop: 4,
   },
   settingsTitle: {
     fontWeight: '600',
@@ -478,5 +336,16 @@ const styles = StyleSheet.create({
   updateButton: {
     borderRadius: 8,
     marginTop: 8,
+  },
+  modalContent: {
+    margin: 20,
+    padding: 24,
+    borderRadius: 16,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginTop: 16,
   },
 });

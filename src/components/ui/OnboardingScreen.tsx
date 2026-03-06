@@ -13,7 +13,7 @@ import { useTranslation } from '../../i18n/useTranslation';
 
 const { width } = Dimensions.get('window');
 
-const slideIcons = ['calculator-variant', 'book-open-variant', 'star-outline'];
+const slideIcons = ['calculator-variant', 'book-open-variant', 'percent-outline', 'swap-horizontal', 'star-outline'];
 
 export function OnboardingScreen() {
   const theme = useTheme();
@@ -26,6 +26,8 @@ export function OnboardingScreen() {
     { icon: slideIcons[0], title: t('onboarding.slide1Title'), description: t('onboarding.slide1Desc') },
     { icon: slideIcons[1], title: t('onboarding.slide2Title'), description: t('onboarding.slide2Desc') },
     { icon: slideIcons[2], title: t('onboarding.slide3Title'), description: t('onboarding.slide3Desc') },
+    { icon: slideIcons[3], title: t('onboarding.slide4Title'), description: t('onboarding.slide4Desc') },
+    { icon: slideIcons[4], title: t('onboarding.slide5Title'), description: t('onboarding.slide5Desc') },
   ];
 
   const onViewableItemsChanged = useRef(

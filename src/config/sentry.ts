@@ -30,8 +30,4 @@ export function initSentry() {
   } catch { /* must not crash */ }
 }
 
-export function setSentryUser(deviceId: string) {
-  Sentry.setUser({ id: deviceId });
-}
-
 export { Sentry };

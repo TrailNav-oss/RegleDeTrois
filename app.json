@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Règle de Trois",
+    "name": "Proportio",
     "slug": "regle-de-trois",
     "version": "0.0.3",
     "runtimeVersion": "0.0.2",
@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FF6B35"
+      "backgroundColor": "#111111"
     },
     "ios": {
       "supportsTablet": true,
@@ -26,7 +26,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.regledetrois.app",
-      "versionCode": 2,
+      "versionCode": 4,
       "predictiveBackGestureEnabled": false,
       "blockedPermissions": [
         "android.permission.ACTIVITY_RECOGNITION"
@@ -39,7 +39,10 @@
     "updates": {
       "url": "https://u.expo.dev/765223d9-4d25-48b7-ae00-031a54cb9f49",
       "enabled": true,
-      "fallbackToCacheTimeout": 3000
+      "fallbackToCacheTimeout": 3000,
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      }
     },
     "plugins": [
       "expo-router",

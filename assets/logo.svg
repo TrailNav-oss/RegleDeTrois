@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+
+  <!-- Background -->
+  <rect width="500" height="500" fill="#111111"/>
+
+  <!-- Ombre sol -->
+  <ellipse cx="250" cy="422" rx="158" ry="18" fill="#FF6B35" opacity="0.08"/>
+
+  <!-- Paroi extérieure bas (épaisseur) -->
+  <path d="M78 198 Q78 360 250 378 Q422 360 422 198 Z" fill="#0a0a0a"/>
+
+  <!-- Corps bol -->
+  <path d="M78 186 Q78 348 250 366 Q422 348 422 186 Z" fill="#181818"/>
+
+  <!-- Paroi intérieure -->
+  <path d="M96 186 Q96 334 250 350 Q404 334 404 186 Z" fill="#121212"/>
+
+  <!-- Ellipse ouverture extérieure -->
+  <ellipse cx="250" cy="186" rx="172" ry="42" fill="#1e1e1e"/>
+  <ellipse cx="250" cy="186" rx="172" ry="42" fill="none" stroke="#FF6B35" stroke-width="4.5"/>
+
+  <!-- Ellipse intérieure (épaisseur du bord) -->
+  <ellipse cx="250" cy="186" rx="154" ry="34" fill="#141414"/>
+  <ellipse cx="250" cy="186" rx="154" ry="34" fill="none" stroke="#FF6B35" stroke-width="1.5" opacity="0.28"/>
+
+  <!-- ANSE avec volume -->
+  <path d="M422 208 Q504 222 504 278 Q504 334 422 348" stroke="#0d0d0d" stroke-width="30" fill="none" stroke-linecap="round"/>
+  <path d="M422 208 Q498 222 498 278 Q498 334 422 348" stroke="#FF6B35" stroke-width="17" fill="none" stroke-linecap="round"/>
+  <path d="M422 208 Q492 222 492 278 Q492 334 422 348" stroke="#141414" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <!-- Reflet intérieur anse -->
+  <path d="M422 220 Q482 232 482 278 Q482 324 422 336" stroke="#FF6B35" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.18"/>
+
+  <!-- SÉPARATEUR CENTRAL -->
+  <line x1="250" y1="152" x2="250" y2="365" stroke="#FF6B35" stroke-width="3.5" opacity="0.7"/>
+  <!-- Portion visible dans ellipse -->
+  <path d="M250 152 L250 220" stroke="#FF6B35" stroke-width="3.5" opacity="0.95"/>
+
+  <!-- Liquide gauche -->
+  <path d="M82 242 Q166 226 250 242 L250 364 Q166 352 82 336 Z" fill="#FF6B35" opacity="0.15"/>
+
+  <!-- Ellipse surface liquide gauche -->
+  <path d="M82 242 Q166 224 250 242" stroke="#FF6B35" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Glow surface -->
+  <path d="M86 242 Q168 225 248 242" stroke="#FF6B35" stroke-width="16" fill="none" opacity="0.05" stroke-linecap="round"/>
+
+  <!-- Reflet 1 -->
+  <path d="M98 256 Q152 246 206 256" stroke="#FF6B35" stroke-width="2.5" fill="none" opacity="0.22" stroke-linecap="round"/>
+
+  <!-- Reflet 2 -->
+  <path d="M92 272 Q138 265 182 272" stroke="#ffffff" stroke-width="1.5" fill="none" opacity="0.07" stroke-linecap="round"/>
+
+  <!-- Surface droite pointillée -->
+  <path d="M250 242 Q334 224 418 242" stroke="#FF6B35" stroke-width="2.5" fill="none" stroke-dasharray="8 6" opacity="0.28" stroke-linecap="round"/>
+
+  <!-- Liquide droite très léger -->
+  <path d="M250 242 Q334 226 418 242 L418 338 Q334 352 250 364 Z" fill="#FF6B35" opacity="0.04"/>
+
+  <!-- GRADUATIONS GAUCHE -->
+  <line x1="78" y1="242" x2="44" y2="242" stroke="#FF6B35" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="78" y1="278" x2="60" y2="278" stroke="#FF6B35" stroke-width="2.5" stroke-linecap="round" opacity="0.42"/>
+  <line x1="78" y1="314" x2="44" y2="314" stroke="#FF6B35" stroke-width="2.5" stroke-linecap="round" opacity="0.24"/>
+  <line x1="78" y1="348" x2="60" y2="348" stroke="#FF6B35" stroke-width="2" stroke-linecap="round" opacity="0.12"/>
+
+  <text x="38" y="248" text-anchor="end" font-size="15" fill="#FF6B35" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="700">¾</text>
+  <text x="38" y="320" text-anchor="end" font-size="15" fill="#FF6B35" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="700" opacity="0.32">½</text>
+  <text x="38" y="354" text-anchor="end" font-size="15" fill="#FF6B35" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="700" opacity="0.15">¼</text>
+
+  <!-- LABEL A -->
+  <text x="162" y="334" text-anchor="middle" font-size="72" font-weight="900" fill="#FF6B35" opacity="0.92" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">A</text>
+
+  <!-- LABEL ? -->
+  <text x="338" y="334" text-anchor="middle" font-size="72" font-weight="900" fill="#ffffff" opacity="0.12" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">?</text>
+
+  <!-- NOM APP -->
+  <text x="250" y="438" text-anchor="middle" font-size="38" font-weight="900" fill="#ffffff" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" letter-spacing="8">PROPORTIO</text>
+
+  <!-- Ligne décorative -->
+  <rect x="140" y="448" width="220" height="2" rx="1" fill="#FF6B35" opacity="0.22"/>
+
+</svg>

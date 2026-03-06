@@ -24,7 +24,7 @@ export default function TabLayout() {
           paddingBottom: 6 + insets.bottom,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
         },
       }}
@@ -44,6 +44,24 @@ export default function TabLayout() {
           title: t('tabs.recipes'),
           tabBarIcon: ({ color, size }) => (
             <Icon source="book-open-variant" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="pourcentages"
+        options={{
+          title: t('tabs.percentages'),
+          tabBarIcon: ({ color, size }) => (
+            <Icon source="percent-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="conversions"
+        options={{
+          title: t('tabs.conversions'),
+          tabBarIcon: ({ color, size }) => (
+            <Icon source="swap-horizontal" size={size} color={color} />
           ),
         }}
       />

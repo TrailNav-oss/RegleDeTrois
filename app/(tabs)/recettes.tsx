@@ -418,11 +418,19 @@ export default function RecettesScreen() {
             <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.primary }]}>
               {t('recipes.title')}
             </Text>
-            {!isPremium && (
-              <Chip icon="information" style={styles.counterChip} textStyle={{ fontSize: 12 }}>
-                {t('recipes.freeCount', { count: recipes.length, max: ADS_CONFIG.MAX_FREE_RECIPES })}
-              </Chip>
-            )}
+            <View style={styles.listHeaderRight}>
+              {!isPremium && (
+                <Chip icon="information" style={styles.counterChip} textStyle={{ fontSize: 12 }}>
+                  {t('recipes.freeCount', { count: recipes.length, max: ADS_CONFIG.MAX_FREE_RECIPES })}
+                </Chip>
+              )}
+              <IconButton
+                icon="help-circle-outline"
+                size={24}
+                onPress={() => Alert.alert(t('recipes.helpTitle'), t('recipes.helpBody'))}
+                iconColor={theme.colors.onSurfaceVariant}
+              />
+            </View>
           </View>
 
           {recipes.length === 0 ? (
@@ -637,6 +645,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 8,
+  },
+  listHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   counterChip: {
     height: 28,
