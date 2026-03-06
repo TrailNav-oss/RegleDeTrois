@@ -1,14 +1,13 @@
 import { Platform } from 'react-native';
 
-// AdMob test IDs — replace with real IDs before production
 export const AD_UNIT_IDS = {
   banner: Platform.select({
-    android: 'ca-app-pub-3940256099942544/6300978111', // Google test banner
-    ios: 'ca-app-pub-3940256099942544/2934735716',
+    android: 'ca-app-pub-7858622615498185/5924041091',
+    ios: 'ca-app-pub-3940256099942544/2934735716', // iOS test — pas encore de vrai ID
     default: '',
   }),
   interstitial: Platform.select({
-    android: 'ca-app-pub-3940256099942544/1033173712', // Google test interstitial
+    android: 'ca-app-pub-7858622615498185/9835365946',
     ios: 'ca-app-pub-3940256099942544/4411468910',
     default: '',
   }),
