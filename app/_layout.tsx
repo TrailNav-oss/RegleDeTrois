@@ -15,6 +15,7 @@ import { OnboardingScreen } from '../src/components/ui/OnboardingScreen';
 import { PurchaseModal } from '../src/components/iap/PurchaseModal';
 import { checkForUpdate, reloadApp } from '../src/services/updateChecker';
 import { useTranslation } from '../src/i18n/useTranslation';
+import { ErrorBoundary } from '../src/components/ui/ErrorBoundary';
 
 try { initSentry(); } catch {}
 SplashScreen.preventAutoHideAsync();
@@ -66,24 +67,28 @@ export default function RootLayout() {
   if (!hasSeenOnboarding) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <PaperProvider theme={theme}>
-          <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-          <OnboardingScreen />
-          <PurchaseModal />
-        </PaperProvider>
+        <ErrorBoundary>
+          <PaperProvider theme={theme}>
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+            <OnboardingScreen />
+            <PurchaseModal />
+          </PaperProvider>
+        </ErrorBoundary>
       </GestureHandlerRootView>
     );
   }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PaperProvider theme={theme}>
-        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-        <PurchaseModal />
-      </PaperProvider>
+      <ErrorBoundary>
+        <PaperProvider theme={theme}>
+          <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+          </Stack>
+          <PurchaseModal />
+        </PaperProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

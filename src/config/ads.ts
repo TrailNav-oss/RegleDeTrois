@@ -11,11 +11,6 @@ export const AD_UNIT_IDS = {
     ios: 'ca-app-pub-3940256099942544/4411468910',
     default: '',
   }),
-  rewarded: Platform.select({
-    android: 'ca-app-pub-3940256099942544/5224354917', // Google test rewarded
-    ios: 'ca-app-pub-3940256099942544/1712485313',
-    default: '',
-  }),
 };
 
 export const ADS_CONFIG = {
