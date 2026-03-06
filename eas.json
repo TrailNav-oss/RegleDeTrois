@@ -1,31 +1,37 @@
 {
   "cli": {
-    "version": ">= 3.0.0"
+    "version": ">= 14.0.0"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "dev"
+      "channel": "development",
+      "android": {
+        "buildType": "apk"
+      }
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "credentialsSource": "local"
       }
     },
     "production": {
       "channel": "production",
+      "autoIncrement": true,
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "credentialsSource": "local"
       }
     }
   },
   "submit": {
     "production": {
       "android": {
-        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "serviceAccountKeyPath": "./GoogleCloud/trailnav-986ada2696e7.json",
         "track": "internal"
       }
     }

@@ -1,8 +1,8 @@
 export const APP_VERSION = {
-  major: 1,
+  major: 0,
   minor: 0,
-  patch: 0,
-  build: 1,
-  label: '1.0.0',
-  channel: 'production' as 'dev' | 'preview' | 'production',
+  patch: 3,
+  build: 2,
+  label: '0.0.3',
+  channel: 'dev' as 'dev' | 'preview' | 'production',
 };

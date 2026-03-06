@@ -33,9 +33,15 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Sentry
+sentry.properties
+
 # Signing keys & service accounts
 *.keystore
 google-play-service-account.json
+credentials.json
+credentials/
+GoogleCloud/
 
 # Build outputs
 /builds/

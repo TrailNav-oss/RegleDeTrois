@@ -24,6 +24,8 @@ import { syncRecipes } from '../../src/utils/syncService';
 import { useTranslation } from '../../src/i18n/useTranslation';
 import { useIapStore } from '../../src/store/iapStore';
 import { APP_VERSION } from '../../src/config/version';
+import { APP_VERSION as appVersion, BUILD_NUMBER } from '../../src/config/app';
+import { checkForUpdate, reloadApp } from '../../src/services/updateChecker';
 
 export default function ProfilScreen() {
   const theme = useTheme();
@@ -46,6 +48,7 @@ export default function ProfilScreen() {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   useEffect(() => {
     const unsubscribe = initAuth();
@@ -87,6 +90,25 @@ export default function ProfilScreen() {
       Alert.alert(t('profile.syncError'), err.message || t('profile.syncErrorMessage'));
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleCheckUpdate = async () => {
+    setCheckingUpdate(true);
+    try {
+      const result = await checkForUpdate();
+      if (result.ready) {
+        Alert.alert(t('profile.updateAvailable'), t('profile.updateRestart'), [
+          { text: t('profile.updateLater') },
+          { text: t('profile.updateReady'), onPress: () => reloadApp() },
+        ]);
+      } else {
+        Alert.alert(t('profile.about'), t('profile.updateNotAvailable'));
+      }
+    } catch {
+      Alert.alert(t('profile.about'), t('profile.updateNotAvailable'));
+    } finally {
+      setCheckingUpdate(false);
     }
   };
 
@@ -311,10 +333,47 @@ export default function ProfilScreen() {
           </Card.Content>
         </Card>
 
-        <Text variant="bodySmall" style={[styles.version, { color: theme.colors.onSurfaceVariant }]}>
-          v{APP_VERSION.label} (build {APP_VERSION.build})
-          {__DEV__ ? ` — ${APP_VERSION.channel}` : ''}
-        </Text>
+        {/* About Section */}
+        <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+          <Card.Content>
+            <Text variant="titleMedium" style={[styles.settingsTitle, { color: theme.colors.onSurface }]}>
+              {t('profile.about')}
+            </Text>
+
+            <View style={styles.aboutRow}>
+              <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
+                {t('profile.appVersion')}
+              </Text>
+              <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
+                {appVersion}
+              </Text>
+            </View>
+
+            <Divider style={styles.settingDivider} />
+
+            <View style={styles.aboutRow}>
+              <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
+                {t('profile.buildNumber')}
+              </Text>
+              <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
+                {BUILD_NUMBER}
+              </Text>
+            </View>
+
+            <Divider style={styles.settingDivider} />
+
+            <Button
+              mode="outlined"
+              onPress={handleCheckUpdate}
+              loading={checkingUpdate}
+              disabled={checkingUpdate}
+              icon="update"
+              style={styles.updateButton}
+            >
+              {checkingUpdate ? t('profile.updateChecking') : t('profile.checkUpdate')}
+            </Button>
+          </Card.Content>
+        </Card>
       </ScrollView>
     </SafeAreaView>
   );
@@ -410,8 +469,14 @@ const styles = StyleSheet.create({
   restoreButton: {
     marginTop: 4,
   },
-  version: {
-    textAlign: 'center',
+  aboutRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  updateButton: {
+    borderRadius: 8,
     marginTop: 8,
   },
 });

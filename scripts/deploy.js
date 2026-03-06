@@ -3,7 +3,7 @@ const { google } = require("googleapis");
 const fs = require("fs");
 const path = require("path");
 
-const KEY_FILE = path.resolve(__dirname, "../google-play-service-account.json");
+const KEY_FILE = path.resolve(__dirname, "../GoogleCloud/trailnav-986ada2696e7.json");
 const PACKAGE_NAME = "com.regledetrois.app";
 const rawArgs = process.argv.slice(2);
 const isDraft = rawArgs.includes("--draft");
