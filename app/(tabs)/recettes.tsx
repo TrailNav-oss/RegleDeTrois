@@ -38,6 +38,11 @@ import type { Unit, Ingredient, Recipe } from '../../src/types/recipe';
 const METRIC_UNITS: Unit[] = ['g', 'kg', 'ml', 'L', 'cl', 'pièce', 'c.à.s', 'c.à.c'];
 const IMPERIAL_UNITS: Unit[] = ['oz', 'lb', 'cup', 'fl oz', 'pièce', 'c.à.s', 'c.à.c'];
 
+function pluralizeUnit(unit: Unit, qty: number): string {
+  if (unit === 'pièce' && Math.abs(qty) > 1) return 'pièces';
+  return unit;
+}
+
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
 }
@@ -217,7 +222,7 @@ export default function RecettesScreen() {
         qty = ing.qty;
       }
       const qtyStr = Number.isInteger(qty) ? qty.toString() : qty.toFixed(1);
-      return `• ${ing.name}: ${qtyStr} ${ing.unit}`;
+      return `• ${ing.name}: ${qtyStr} ${pluralizeUnit(ing.unit, qty)}`;
     });
     const text = `${name} (${t('recipes.shareFor', { count: portions })})\n\n${lines.join('\n')}\n\n— Proportio`;
     try {
@@ -275,7 +280,7 @@ export default function RecettesScreen() {
                     style={styles.unitButton}
                     labelStyle={styles.unitLabel}
                   >
-                    {ingredient.unit}
+                    {pluralizeUnit(ingredient.unit, ingredient.qty)}
                   </Button>
                 }
               >
@@ -295,10 +300,10 @@ export default function RecettesScreen() {
             {hasChanged && (
               <View style={styles.scaledRow}>
                 <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  {ingredient.qty} {ingredient.unit}
+                  {ingredient.qty} {pluralizeUnit(ingredient.unit, ingredient.qty)}
                 </Text>
                 <Text variant="bodyMedium" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
-                  {' → '}{scaled} {ingredient.unit}
+                  {' → '}{scaled} {pluralizeUnit(ingredient.unit, scaled)}
                 </Text>
               </View>
             )}
@@ -362,7 +367,7 @@ export default function RecettesScreen() {
             </View>
 
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              {t('recipes.baseLabel', { qty: ingredient.qty, unit: ingredient.unit })}
+              {t('recipes.baseLabel', { qty: ingredient.qty, unit: pluralizeUnit(ingredient.unit, ingredient.qty) })}
             </Text>
 
             <View style={styles.qtyUnitRow}>
@@ -385,7 +390,7 @@ export default function RecettesScreen() {
                 outlineColor={isDriver ? theme.colors.primary : theme.colors.outline}
               />
               <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, minWidth: 40 }}>
-                {ingredient.unit}
+                {pluralizeUnit(ingredient.unit, computedQty ?? ingredient.qty)}
               </Text>
             </View>
           </View>

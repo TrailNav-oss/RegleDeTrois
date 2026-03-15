@@ -3,13 +3,12 @@ const { google } = require("googleapis");
 const path = require("path");
 const fs = require("fs");
 
-const KEY_FILE = path.resolve(__dirname, "../google-play-service-account.json");
+const KEY_FILE = path.resolve(__dirname, "../GoogleCloud/trailnav-986ada2696e7.json");
 const PACKAGE_NAME = "com.regledetrois.app";
-const TRACKS = ["internal", "alpha", "beta", "production"];
 
 if (!fs.existsSync(KEY_FILE)) {
-  console.error("Cle service account introuvable:", KEY_FILE);
-  console.error("Telechargez-la depuis Google Cloud Console.");
+  console.error("Clé service account introuvable:", KEY_FILE);
+  console.error("Téléchargez-la depuis Google Cloud Console.");
   process.exit(1);
 }
 
@@ -25,24 +24,27 @@ if (!fs.existsSync(KEY_FILE)) {
 
     console.log(`\n  Play Store Status — ${PACKAGE_NAME}\n`);
 
-    for (const trackName of TRACKS) {
-      try {
-        const { data: track } = await api.edits.tracks.get({
-          packageName: PACKAGE_NAME,
-          editId: edit.id,
-          track: trackName,
-        });
+    // List ALL tracks (built-in + custom closed testing tracks)
+    const { data: trackList } = await api.edits.tracks.list({
+      packageName: PACKAGE_NAME,
+      editId: edit.id,
+    });
 
+    if (trackList.tracks && trackList.tracks.length > 0) {
+      for (const track of trackList.tracks) {
+        const name = track.track;
         if (track.releases && track.releases.length > 0) {
-          const latest = track.releases[0];
-          const codes = (latest.versionCodes || []).join(", ");
-          console.log(`  ${trackName.padEnd(12)} | status: ${latest.status.padEnd(10)} | versionCodes: [${codes}] | name: ${latest.name || "-"}`);
+          for (const rel of track.releases) {
+            const codes = (rel.versionCodes || []).join(", ");
+            const status = (rel.status || "-").padEnd(12);
+            console.log(`  ${name.padEnd(24)} | status: ${status} | versionCodes: [${codes}] | name: ${rel.name || "-"}`);
+          }
         } else {
-          console.log(`  ${trackName.padEnd(12)} | (vide)`);
+          console.log(`  ${name.padEnd(24)} | (vide)`);
         }
-      } catch {
-        console.log(`  ${trackName.padEnd(12)} | (aucune release)`);
       }
+    } else {
+      console.log("  Aucun track trouvé.");
     }
 
     console.log("");

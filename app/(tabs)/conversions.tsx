@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,8 +7,11 @@ import {
   Platform,
   Animated,
   Alert,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
+  type LayoutChangeEvent,
 } from 'react-native';
-import { Text, TextInput, useTheme, IconButton, Snackbar, SegmentedButtons } from 'react-native-paper';
+import { Text, TextInput, useTheme, IconButton, Snackbar, SegmentedButtons, type MD3Theme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import {
@@ -31,6 +34,83 @@ const COLORS = {
   textSecondary: '#6B7280',
   border: '#E5E7EB',
 };
+
+function UnitSelector({ label, selected, onSelect, units, theme }: {
+  label: string;
+  selected: string;
+  onSelect: (id: string) => void;
+  units: ConversionUnit[];
+  theme: MD3Theme;
+}) {
+  const [showMore, setShowMore] = useState(false);
+  const containerWidth = useRef(0);
+  const contentWidth = useRef(0);
+  const scrollX = useRef(0);
+
+  const checkOverflow = useCallback(() => {
+    setShowMore(contentWidth.current > containerWidth.current + scrollX.current + 8);
+  }, []);
+
+  const handleLayout = useCallback((e: LayoutChangeEvent) => {
+    containerWidth.current = e.nativeEvent.layout.width;
+    checkOverflow();
+  }, [checkOverflow]);
+
+  const handleContentSizeChange = useCallback((w: number) => {
+    contentWidth.current = w;
+    checkOverflow();
+  }, [checkOverflow]);
+
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollX.current = e.nativeEvent.contentOffset.x;
+    checkOverflow();
+  }, [checkOverflow]);
+
+  return (
+    <View style={styles.unitSelectorContainer}>
+      <Text style={styles.unitSelectorLabel}>{label}</Text>
+      <View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          onLayout={handleLayout}
+          onContentSizeChange={handleContentSizeChange}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+        >
+          <View style={styles.unitChipsRow}>
+            {units.map((u) => (
+              <IconButton
+                key={u.id}
+                icon={() => (
+                  <Text style={[
+                    styles.unitChipText,
+                    selected === u.id && { color: theme.colors.onPrimary, fontWeight: '700' },
+                  ]}>
+                    {u.label}
+                  </Text>
+                )}
+                onPress={() => { onSelect(u.id); lightHaptic(); }}
+                style={[
+                  styles.unitChip,
+                  selected === u.id
+                    ? { backgroundColor: theme.colors.primary }
+                    : { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
+                ]}
+                size={16}
+              />
+            ))}
+          </View>
+        </ScrollView>
+        {showMore && (
+          <View style={[styles.scrollIndicator, { backgroundColor: COLORS.background }]} pointerEvents="none">
+            <Text style={[styles.scrollIndicatorIcon, { color: theme.colors.primary }]}>›</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
 
 export default function ConversionsScreen() {
   const theme = useTheme();
@@ -98,37 +178,6 @@ export default function ConversionsScreen() {
     setCategory(val as ConversionCategory);
   };
 
-  const renderUnitSelector = (label: string, selected: string, onSelect: (id: string) => void) => (
-    <View style={styles.unitSelectorContainer}>
-      <Text style={styles.unitSelectorLabel}>{label}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.unitChipsRow}>
-          {units.map((u) => (
-            <IconButton
-              key={u.id}
-              icon={() => (
-                <Text style={[
-                  styles.unitChipText,
-                  selected === u.id && { color: theme.colors.onPrimary, fontWeight: '700' },
-                ]}>
-                  {u.label}
-                </Text>
-              )}
-              onPress={() => { onSelect(u.id); lightHaptic(); }}
-              style={[
-                styles.unitChip,
-                selected === u.id
-                  ? { backgroundColor: theme.colors.primary }
-                  : { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
-              ]}
-              size={16}
-            />
-          ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: COLORS.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
@@ -168,7 +217,7 @@ export default function ConversionsScreen() {
           {/* Conversion card */}
           <View style={styles.card}>
             {/* From */}
-            {renderUnitSelector(t('conversions.from'), fromUnit, setFromUnit)}
+            <UnitSelector label={t('conversions.from')} selected={fromUnit} onSelect={setFromUnit} units={units} theme={theme} />
 
             <TextInput
               label={t('conversions.value')}
@@ -197,7 +246,7 @@ export default function ConversionsScreen() {
             </View>
 
             {/* To */}
-            {renderUnitSelector(t('conversions.to'), toUnit, setToUnit)}
+            <UnitSelector label={t('conversions.to')} selected={toUnit} onSelect={setToUnit} units={units} theme={theme} />
 
             {/* Result */}
             {result !== null && (
@@ -262,6 +311,20 @@ const styles = StyleSheet.create({
   unitChipsRow: { flexDirection: 'row', gap: SPACING.sm },
   unitChip: { borderRadius: 20, width: 'auto', minWidth: 48, paddingHorizontal: 12, height: 36 },
   unitChipText: { fontSize: 14, color: COLORS.textPrimary },
+
+  scrollIndicator: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingLeft: 4,
+    paddingRight: 2,
+  },
+  scrollIndicatorIcon: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
 
   input: { fontSize: 20, backgroundColor: COLORS.surface },
 

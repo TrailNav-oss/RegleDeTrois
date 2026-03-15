@@ -150,11 +150,33 @@ export default function PourcentagesScreen() {
 
   const getFieldLabels = (): { label1: string; label2: string } => {
     switch (mode) {
-      case 'percentOf': return { label1: t('percentages.percent'), label2: t('percentages.value') };
-      case 'variation': return { label1: t('percentages.oldValue'), label2: t('percentages.newValue') };
-      case 'increase': return { label1: t('percentages.percent'), label2: t('percentages.value') };
-      case 'decrease': return { label1: t('percentages.percent'), label2: t('percentages.value') };
-      case 'whatPercent': return { label1: t('percentages.part'), label2: t('percentages.total') };
+      case 'percentOf': return { label1: `${t('percentages.percent')} (X)`, label2: `${t('percentages.value')} (Y)` };
+      case 'variation': return { label1: `${t('percentages.oldValue')} (A)`, label2: `${t('percentages.newValue')} (B)` };
+      case 'increase': return { label1: `${t('percentages.percent')} (X)`, label2: `${t('percentages.value')} (Y)` };
+      case 'decrease': return { label1: `${t('percentages.percent')} (X)`, label2: `${t('percentages.value')} (Y)` };
+      case 'whatPercent': return { label1: `${t('percentages.part')} (X)`, label2: `${t('percentages.total')} (Y)` };
+    }
+  };
+
+  type FormulaElement = { type: 'var'; label: string } | { type: 'text'; label: string };
+
+  const getFormulaElements = (): FormulaElement[] => {
+    switch (mode) {
+      case 'percentOf': return [
+        { type: 'var', label: 'X' }, { type: 'text', label: ' %  de  ' }, { type: 'var', label: 'Y' }, { type: 'text', label: '  =  ?' },
+      ];
+      case 'variation': return [
+        { type: 'var', label: 'A' }, { type: 'text', label: '  →  ' }, { type: 'var', label: 'B' }, { type: 'text', label: '  =  ? %' },
+      ];
+      case 'increase': return [
+        { type: 'var', label: 'Y' }, { type: 'text', label: '  +  ' }, { type: 'var', label: 'X' }, { type: 'text', label: ' %  =  ?' },
+      ];
+      case 'decrease': return [
+        { type: 'var', label: 'Y' }, { type: 'text', label: '  −  ' }, { type: 'var', label: 'X' }, { type: 'text', label: ' %  =  ?' },
+      ];
+      case 'whatPercent': return [
+        { type: 'var', label: 'X' }, { type: 'text', label: '  ÷  ' }, { type: 'var', label: 'Y' }, { type: 'text', label: '  =  ? %' },
+      ];
     }
   };
 
@@ -217,13 +239,21 @@ export default function PourcentagesScreen() {
             </View>
           </ScrollView>
 
-          {/* Description du mode */}
-          <Text style={styles.modeDesc}>
-            {t(`percentages.${mode}Desc`)}
-          </Text>
-
           {/* Card principale */}
           <View style={styles.card}>
+            {/* Formula display */}
+            <View style={styles.formulaRow}>
+              {getFormulaElements().map((el, i) =>
+                el.type === 'var' ? (
+                  <View key={i} style={[styles.varBadge, { backgroundColor: theme.colors.primaryContainer }]}>
+                    <Text style={[styles.varBadgeText, { color: theme.colors.primary }]}>{el.label}</Text>
+                  </View>
+                ) : (
+                  <Text key={i} style={styles.formulaText}>{el.label}</Text>
+                ),
+              )}
+            </View>
+
             {/* Presets */}
             {showPresets && (
               <View style={styles.presetsRow}>
@@ -351,12 +381,10 @@ const styles = StyleSheet.create({
   headerCenter: { flex: 1, alignItems: 'center' },
   title: { fontSize: 24, fontWeight: '700', color: COLORS.textPrimary, textAlign: 'center' },
 
-  modeScroll: { marginBottom: SPACING.sm, flexGrow: 0 },
+  modeScroll: { marginBottom: SPACING.lg, flexGrow: 0 },
   modeRow: { flexDirection: 'row', gap: SPACING.sm, paddingHorizontal: 2 },
   modeChip: { borderRadius: 20 },
   modeChipText: { fontSize: 12 },
-
-  modeDesc: { fontSize: 13, color: COLORS.textSecondary, textAlign: 'center', marginBottom: SPACING.lg },
 
   card: {
     backgroundColor: COLORS.surface,
@@ -365,6 +393,30 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     padding: SPACING.xl,
     gap: SPACING.md,
+  },
+
+  formulaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  varBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  varBadgeText: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  formulaText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
 
   presetsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.sm },

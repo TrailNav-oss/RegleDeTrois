@@ -1,6 +1,6 @@
 {
   "name": "regle-de-trois",
-  "version": "0.0.4",
+  "version": "0.0.7",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
@@ -12,6 +12,8 @@
     "bump": "node scripts/bump-version.js",
     "deploy": "node scripts/deploy.js",
     "play:status": "node scripts/play-status.js",
+    "tracks:list": "node scripts/manage-tracks.js list",
+    "tracks:create": "node scripts/manage-tracks.js create",
     "build:info": "node scripts/gen-build-info.js"
   },
   "dependencies": {
