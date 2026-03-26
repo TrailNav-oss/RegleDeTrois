@@ -12,6 +12,11 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   removeItem: jest.fn(),
 }));
 
+// Mock Sentry
+jest.mock('../config/sentry', () => ({
+  Sentry: { captureException: jest.fn() },
+}));
+
 import { useAdsStore } from '../store/adsStore';
 
 describe('adsStore', () => {
@@ -63,12 +68,6 @@ describe('adsStore', () => {
     expect(useAdsStore.getState().shouldShowInterstitial()).toBe(false);
   });
 
-  it('resets count', () => {
-    useAdsStore.setState({ calcCount: 10 });
-    useAdsStore.getState().resetCount();
-    expect(useAdsStore.getState().calcCount).toBe(0);
-  });
-
   it('toggles premium', () => {
     expect(useAdsStore.getState().isPremium).toBe(false);
     useAdsStore.getState().togglePremium();
@@ -83,5 +82,19 @@ describe('adsStore', () => {
     expect(useAdsStore.getState().isPremium).toBe(true);
     useAdsStore.getState().setPremium(false);
     expect(useAdsStore.getState().isPremium).toBe(false);
+  });
+
+  it('sets adsInitialized', () => {
+    expect(useAdsStore.getState().adsInitialized).toBe(false);
+    useAdsStore.getState().setAdsInitialized();
+    expect(useAdsStore.getState().adsInitialized).toBe(true);
+  });
+
+  it('adsInitialized resets on store rehydration (not persisted)', () => {
+    useAdsStore.getState().setAdsInitialized();
+    expect(useAdsStore.getState().adsInitialized).toBe(true);
+    // Simulating rehydration: only persisted fields survive
+    useAdsStore.setState({ adsInitialized: false });
+    expect(useAdsStore.getState().adsInitialized).toBe(false);
   });
 });

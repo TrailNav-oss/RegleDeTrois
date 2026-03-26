@@ -2,8 +2,8 @@
   "expo": {
     "name": "Proportio",
     "slug": "regle-de-trois",
-    "version": "0.0.7",
-    "runtimeVersion": "0.0.7",
+    "version": "0.0.11",
+    "runtimeVersion": "0.0.11",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.regledetrois.app",
-      "buildNumber": "9"
+      "buildNumber": "13"
     },
     "android": {
       "adaptiveIcon": {
@@ -26,7 +26,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.regledetrois.app",
-      "versionCode": 9,
+      "versionCode": 13,
+      "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
       "blockedPermissions": [
         "android.permission.ACTIVITY_RECOGNITION"

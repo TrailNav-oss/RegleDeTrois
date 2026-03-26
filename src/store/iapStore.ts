@@ -12,6 +12,7 @@ import {
 import { Platform } from 'react-native';
 import { IAP_SKUS, IAP_PRODUCT_ID } from '../config/iap';
 import { useAdsStore } from './adsStore';
+import { Sentry } from '../config/sentry';
 
 interface IapState {
   connected: boolean;
@@ -51,6 +52,7 @@ export const useIapStore = create<IapState>()((set, get) => ({
         useAdsStore.getState().setPremium(true);
       }
     } catch (err: any) {
+      try { Sentry.captureException(err); } catch {}
       set({ error: err.message || 'IAP init failed' });
     }
   },
@@ -59,8 +61,8 @@ export const useIapStore = create<IapState>()((set, get) => ({
     try {
       await endConnection();
       set({ connected: false });
-    } catch {
-      // Silent cleanup
+    } catch (err) {
+      try { Sentry.captureException(err); } catch {}
     }
   },
 
@@ -68,14 +70,16 @@ export const useIapStore = create<IapState>()((set, get) => ({
     set({ loading: true, error: null });
     try {
       const result = await fetchProducts({ skus: IAP_SKUS });
-      const products = (result ?? []) as Product[];
+      const products = (Array.isArray(result) ? result : []) as Product[];
       set({ products, loading: false });
     } catch (err: any) {
+      try { Sentry.captureException(err); } catch {}
       set({ loading: false, error: err.message || 'Failed to load products' });
     }
   },
 
   purchase: async () => {
+    if (get().loading) return;
     set({ loading: true, error: null });
     try {
       const requestProps = Platform.OS === 'ios'
@@ -94,6 +98,7 @@ export const useIapStore = create<IapState>()((set, get) => ({
       }
       set({ loading: false, purchaseModalVisible: false });
     } catch (err: any) {
+      try { Sentry.captureException(err); } catch {}
       set({ loading: false, error: err.message || 'Purchase failed' });
     }
   },
@@ -113,6 +118,7 @@ export const useIapStore = create<IapState>()((set, get) => ({
       set({ loading: false });
       return false;
     } catch (err: any) {
+      try { Sentry.captureException(err); } catch {}
       set({ loading: false, error: err.message || 'Restore failed' });
       return false;
     }

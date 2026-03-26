@@ -2,6 +2,7 @@ import React, { Component, type ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { Sentry } from '../../config/sentry';
+import i18n from '../../i18n';
 
 interface Props {
   children: ReactNode;
@@ -33,12 +34,12 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <View style={styles.container}>
           <Text style={styles.emoji}>⚠️</Text>
-          <Text style={styles.title}>Oups !</Text>
+          <Text style={styles.title}>{i18n.t('errorBoundary.title')}</Text>
           <Text style={styles.message}>
-            Une erreur inattendue est survenue.
+            {i18n.t('errorBoundary.message')}
           </Text>
           <Button mode="contained" onPress={this.handleReset} style={styles.button}>
-            Réessayer
+            {i18n.t('errorBoundary.retry')}
           </Button>
         </View>
       );

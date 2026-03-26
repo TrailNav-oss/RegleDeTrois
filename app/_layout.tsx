@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { Alert } from 'react-native';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -18,6 +18,8 @@ import { useTranslation } from '../src/i18n/useTranslation';
 import { ErrorBoundary } from '../src/components/ui/ErrorBoundary';
 
 try { initSentry(); } catch {}
+
+// AdMob init moved to ConsentManager (consent BEFORE init for GDPR)
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -26,15 +28,16 @@ export default function RootLayout() {
 
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
-  const initIap = useIapStore((s) => s.init);
-  const cleanupIap = useIapStore((s) => s.cleanup);
   const theme = isDarkMode ? darkTheme : lightTheme;
   const [ready, setReady] = useState(false);
+  const iapInitialized = useRef(false);
 
   useEffect(() => {
-    initIap();
-    return () => { cleanupIap(); };
-  }, [initIap, cleanupIap]);
+    if (iapInitialized.current) return;
+    iapInitialized.current = true;
+    useIapStore.getState().init();
+    return () => { useIapStore.getState().cleanup(); };
+  }, []);
 
   // OTA check
   useEffect(() => {

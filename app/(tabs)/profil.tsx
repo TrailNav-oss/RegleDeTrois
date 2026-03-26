@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Pressable } from 'react-native';
 import {
   Text,
@@ -20,8 +20,10 @@ import { useLanguageStore, type LanguageOption } from '../../src/store/languageS
 import { useUnitsStore, type UnitSystem } from '../../src/store/unitsStore';
 import { useTranslation } from '../../src/i18n/useTranslation';
 import { useIapStore } from '../../src/store/iapStore';
+import { usePreferencesStore } from '../../src/store/preferencesStore';
 import { APP_VERSION, BUILD_NUMBER } from '../../src/config/app';
 import { checkForUpdate, reloadApp } from '../../src/services/updateChecker';
+import { AdBanner } from '../../src/components/ads/AdBanner';
 
 export default function ProfilScreen() {
   const theme = useTheme();
@@ -37,8 +39,18 @@ export default function ProfilScreen() {
   const setUnitSystem = useUnitsStore((s) => s.setUnitSystem);
   const showPurchaseModal = useIapStore((s) => s.showPurchaseModal);
   const restoreIap = useIapStore((s) => s.restore);
+  const multipliers = usePreferencesStore((s) => s.multipliers);
+  const addMultiplier = usePreferencesStore((s) => s.addMultiplier);
+  const removeMultiplier = usePreferencesStore((s) => s.removeMultiplier);
+  const resetMultipliers = usePreferencesStore((s) => s.resetMultipliers);
+  const percentagePresets = usePreferencesStore((s) => s.percentagePresets);
+  const addPercentagePreset = usePreferencesStore((s) => s.addPercentagePreset);
+  const removePercentagePreset = usePreferencesStore((s) => s.removePercentagePreset);
+  const resetPercentagePresets = usePreferencesStore((s) => s.resetPercentagePresets);
 
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [newMultiplier, setNewMultiplier] = useState('');
+  const [newPreset, setNewPreset] = useState('');
   const [devUnlocked, setDevUnlocked] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [devPassword, setDevPassword] = useState('');
@@ -46,6 +58,10 @@ export default function ProfilScreen() {
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const DEV_PASSWORD = '12334566';
+
+  useEffect(() => {
+    return () => { if (tapTimerRef.current) clearTimeout(tapTimerRef.current); };
+  }, []);
 
   const handleVersionTap = () => {
     tapCountRef.current += 1;
@@ -111,16 +127,27 @@ export default function ProfilScreen() {
                 {t('profile.language')}
               </Text>
             </View>
-            <SegmentedButtons
-              value={language}
-              onValueChange={(v) => setLanguage(v as LanguageOption)}
-              buttons={[
+            <View style={styles.chipRow}>
+              {([
                 { value: 'auto', label: t('profile.langAuto') },
                 { value: 'fr', label: t('profile.langFr') },
                 { value: 'en', label: t('profile.langEn') },
-              ]}
-              style={styles.languageToggle}
-            />
+                { value: 'es', label: t('profile.langEs') },
+                { value: 'de', label: t('profile.langDe') },
+              ] as const).map((item) => (
+                <Chip
+                  key={item.value}
+                  selected={language === item.value}
+                  onPress={() => setLanguage(item.value as LanguageOption)}
+                  mode="outlined"
+                  compact
+                  showSelectedOverlay
+                  style={styles.langChip}
+                >
+                  {item.label}
+                </Chip>
+              ))}
+            </View>
 
             <Divider style={styles.settingDivider} />
 
@@ -151,6 +178,91 @@ export default function ProfilScreen() {
           </Card.Content>
         </Card>
 
+        {/* Customization Section */}
+        <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+          <Card.Content>
+            <Text variant="titleMedium" style={[styles.settingsTitle, { color: theme.colors.onSurface }]}>
+              {t('profile.customization')}
+            </Text>
+
+            {/* Recipe multipliers */}
+            <Text variant="bodyLarge" style={{ color: theme.colors.onSurface, marginBottom: 8 }}>
+              {t('profile.recipeMultipliers')}
+            </Text>
+            <View style={styles.chipRow}>
+              {multipliers.map((m) => (
+                <Chip key={m} onClose={() => removeMultiplier(m)} compact style={styles.langChip}>
+                  {`\u00d7${m}`}
+                </Chip>
+              ))}
+            </View>
+            <View style={styles.addRow}>
+              <TextInput
+                value={newMultiplier}
+                onChangeText={setNewMultiplier}
+                placeholder={t('profile.valuePlaceholder')}
+                keyboardType="decimal-pad"
+                mode="outlined"
+                dense
+                style={styles.addInput}
+                activeOutlineColor={theme.colors.primary}
+              />
+              <Button
+                mode="contained-tonal"
+                compact
+                onPress={() => {
+                  const v = parseFloat(newMultiplier.replace(',', '.'));
+                  if (v > 0 && isFinite(v)) { addMultiplier(v); setNewMultiplier(''); }
+                }}
+              >
+                {t('profile.addValue')}
+              </Button>
+              <Button mode="text" compact onPress={resetMultipliers}>
+                {t('profile.resetDefaults')}
+              </Button>
+            </View>
+
+            <Divider style={styles.settingDivider} />
+
+            {/* Percentage presets */}
+            <Text variant="bodyLarge" style={{ color: theme.colors.onSurface, marginBottom: 8 }}>
+              {t('profile.percentagePresets')}
+            </Text>
+            <View style={styles.chipRow}>
+              {percentagePresets.map((p) => (
+                <Chip key={p} onClose={() => removePercentagePreset(p)} compact style={styles.langChip}>
+                  {`${p}%`}
+                </Chip>
+              ))}
+            </View>
+            <View style={styles.addRow}>
+              <TextInput
+                value={newPreset}
+                onChangeText={setNewPreset}
+                placeholder={t('profile.valuePlaceholder')}
+                keyboardType="decimal-pad"
+                mode="outlined"
+                dense
+                style={styles.addInput}
+                activeOutlineColor={theme.colors.primary}
+              />
+              <Button
+                mode="contained-tonal"
+                compact
+                onPress={() => {
+                  const v = parseFloat(newPreset.replace(',', '.'));
+                  if (v > 0 && isFinite(v)) { addPercentagePreset(v); setNewPreset(''); }
+                }}
+              >
+                {t('profile.addValue')}
+              </Button>
+              <Button mode="text" compact onPress={resetPercentagePresets}>
+                {t('profile.resetDefaults')}
+              </Button>
+            </View>
+          </Card.Content>
+        </Card>
+
         {/* Premium Section */}
         <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
           <Card.Content>
@@ -161,7 +273,7 @@ export default function ProfilScreen() {
                     {t('profile.premium')}
                   </Text>
                   <Chip compact style={styles.devChip} textStyle={{ fontSize: 10 }}>
-                    DEV
+                    {t('profile.devLabel')}
                   </Chip>
                 </View>
                 <Switch value={isPremium} onValueChange={togglePremium} color={theme.colors.primary} />
@@ -244,6 +356,7 @@ export default function ProfilScreen() {
           </Card.Content>
         </Card>
       </ScrollView>
+      <AdBanner />
 
       <Portal>
         <Modal
@@ -252,10 +365,10 @@ export default function ProfilScreen() {
           contentContainerStyle={[styles.modalContent, { backgroundColor: theme.colors.surface }]}
         >
           <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginBottom: 16 }}>
-            Mode développeur
+            {t('profile.devMode')}
           </Text>
           <TextInput
-            label="Mot de passe"
+            label={t('profile.passwordLabel')}
             value={devPassword}
             onChangeText={setDevPassword}
             mode="outlined"
@@ -317,6 +430,15 @@ const styles = StyleSheet.create({
   languageToggle: {
     marginBottom: 8,
   },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  langChip: {
+    borderRadius: 20,
+  },
   devChip: {
     height: 20,
   },
@@ -347,5 +469,15 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 8,
     marginTop: 16,
+  },
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  addInput: {
+    flex: 1,
+    maxWidth: 100,
   },
 });

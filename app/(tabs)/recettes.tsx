@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -21,7 +21,9 @@ import {
   Divider,
   Chip,
   SegmentedButtons,
+  Snackbar,
 } from 'react-native-paper';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AdBanner } from '../../src/components/ads/AdBanner';
 import { PremiumGate } from '../../src/components/ads/PremiumGate';
@@ -33,13 +35,20 @@ import { ADS_CONFIG } from '../../src/config/ads';
 import { useTranslation } from '../../src/i18n/useTranslation';
 import { useIapStore } from '../../src/store/iapStore';
 import { useUnitsStore } from '../../src/store/unitsStore';
+import { sanitizeNumericInput } from '../../src/utils/sanitize';
+import { usePreferencesStore } from '../../src/store/preferencesStore';
 import type { Unit, Ingredient, Recipe } from '../../src/types/recipe';
 
 const METRIC_UNITS: Unit[] = ['g', 'kg', 'ml', 'L', 'cl', 'pièce', 'c.à.s', 'c.à.c'];
 const IMPERIAL_UNITS: Unit[] = ['oz', 'lb', 'cup', 'fl oz', 'pièce', 'c.à.s', 'c.à.c'];
 
+const UNIT_PLURALS: Partial<Record<Unit, string>> = {
+  'pièce': 'pièces',
+  'cup': 'cups',
+};
+
 function pluralizeUnit(unit: Unit, qty: number): string {
-  if (unit === 'pièce' && Math.abs(qty) > 1) return 'pièces';
+  if (Math.abs(qty) > 1 && UNIT_PLURALS[unit]) return UNIT_PLURALS[unit]!;
   return unit;
 }
 
@@ -57,9 +66,13 @@ export default function RecettesScreen() {
   const addRecipe = useRecipeStore((s) => s.addRecipe);
   const updateRecipe = useRecipeStore((s) => s.updateRecipe);
   const deleteRecipe = useRecipeStore((s) => s.deleteRecipe);
+  const draft = useRecipeStore((s) => s.draft);
+  const setDraft = useRecipeStore((s) => s.setDraft);
+  const clearDraft = useRecipeStore((s) => s.clearDraft);
   const isPremium = useAdsStore((s) => s.isPremium);
   const showPurchaseModal = useIapStore((s) => s.showPurchaseModal);
   const unitSystem = useUnitsStore((s) => s.unitSystem);
+  const multipliers = usePreferencesStore((s) => s.multipliers);
   const UNITS = unitSystem === 'metric' ? METRIC_UNITS : IMPERIAL_UNITS;
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -75,11 +88,35 @@ export default function RecettesScreen() {
   const [mode, setMode] = useState<RecipeMode>('classic');
   const [driverIngredientId, setDriverIngredientId] = useState<string | null>(null);
   const [adjustedValues, setAdjustedValues] = useState<Record<string, string>>({});
+  const [recipeSearch, setRecipeSearch] = useState('');
+  const [snackVisible, setSnackVisible] = useState(false);
+  const [snackMessage, setSnackMessage] = useState('');
+
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-save draft for new recipes (debounce 500ms)
+  useEffect(() => {
+    if (!showEditor || editingId) return;
+    const shouldSave = recipeName.trim() !== '' || ingredients.some((ing) => ing.name.trim() !== '');
+
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+
+    if (shouldSave) {
+      draftTimerRef.current = setTimeout(() => {
+        setDraft({ name: recipeName, basePortions, ingredients, savedAt: Date.now() });
+      }, 500);
+    }
+
+    return () => {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    };
+  }, [recipeName, basePortions, ingredients, showEditor, editingId, setDraft]);
 
   const baseParsed = parseInt(basePortions, 10) || 0;
   const newParsed = parseInt(newPortions, 10) || 0;
+  const invalidPortions = baseParsed <= 0;
 
-  const scaledQuantities = scaleIngredients(ingredients, baseParsed, newParsed);
+  const scaledQuantities = invalidPortions ? ingredients.map(() => 0) : scaleIngredients(ingredients, baseParsed, newParsed);
 
   const adjustedResult = useMemo(() => {
     if (mode !== 'adjusted' || !driverIngredientId) return null;
@@ -90,8 +127,15 @@ export default function RecettesScreen() {
     const driverQty = parseFloat(raw.replace(',', '.'));
     if (isNaN(driverQty) || driverQty < 0) return null;
 
+    if (baseParsed <= 0) return null;
     return adjustByIngredient(ingredients, baseParsed, driverIndex, driverQty);
   }, [mode, driverIngredientId, adjustedValues, ingredients, baseParsed]);
+
+  const filteredRecipes = useMemo(() => {
+    if (!recipeSearch.trim()) return recipes;
+    const q = recipeSearch.trim().toLowerCase();
+    return recipes.filter((r) => r.name.toLowerCase().includes(q) || r.ingredients.some((i) => i.name.toLowerCase().includes(q)));
+  }, [recipes, recipeSearch]);
 
   const addIngredient = () => {
     setIngredients((prev) => [
@@ -164,6 +208,7 @@ export default function RecettesScreen() {
       addRecipe(data);
     }
 
+    clearDraft();
     handleReset();
     setShowEditor(false);
   };
@@ -204,8 +249,39 @@ export default function RecettesScreen() {
   };
 
   const handleNewRecipe = () => {
-    handleReset();
-    setShowEditor(true);
+    if (draft) {
+      Alert.alert(
+        t('recipes.draftTitle'),
+        t('recipes.draftMessage'),
+        [
+          {
+            text: t('recipes.draftNew'),
+            onPress: () => {
+              clearDraft();
+              handleReset();
+              setShowEditor(true);
+            },
+          },
+          {
+            text: t('recipes.draftResume'),
+            onPress: () => {
+              setEditingId(null);
+              setRecipeName(draft.name);
+              setBasePortions(draft.basePortions);
+              setNewPortions(draft.basePortions);
+              setIngredients(draft.ingredients);
+              setMode('classic');
+              setDriverIngredientId(null);
+              setAdjustedValues({});
+              setShowEditor(true);
+            },
+          },
+        ],
+      );
+    } else {
+      handleReset();
+      setShowEditor(true);
+    }
   };
 
   const handleShareRecipe = async () => {
@@ -228,6 +304,49 @@ export default function RecettesScreen() {
     try {
       await Share.share({ message: text });
     } catch { /* user cancelled */ }
+  };
+
+  const handleCopyAll = async () => {
+    const validIngredients = ingredients.filter((ing) => ing.name.trim() !== '');
+    if (validIngredients.length === 0) return;
+    const lines = validIngredients.map((ing, i) => {
+      let qty: number;
+      if (mode === 'classic') {
+        qty = scaledQuantities[i];
+      } else if (adjustedResult) {
+        qty = adjustedResult.quantities[i];
+      } else {
+        qty = ing.qty;
+      }
+      const qtyStr = Number.isInteger(qty) ? qty.toString() : qty.toFixed(1);
+      return `${ing.name}: ${qtyStr} ${pluralizeUnit(ing.unit, qty)}`;
+    });
+    await Clipboard.setStringAsync(lines.join('\n'));
+    setSnackMessage(t('recipes.copiedAll'));
+    setSnackVisible(true);
+  };
+
+  const handleShoppingList = async () => {
+    const name = recipeName.trim() || t('recipes.noName');
+    const validIngredients = ingredients.filter((ing) => ing.name.trim() !== '');
+    if (validIngredients.length === 0) return;
+    const portions = mode === 'classic' ? newParsed : (adjustedResult?.portions ?? baseParsed);
+    const lines = validIngredients.map((ing, i) => {
+      let qty: number;
+      if (mode === 'classic') {
+        qty = scaledQuantities[i];
+      } else if (adjustedResult) {
+        qty = adjustedResult.quantities[i];
+      } else {
+        qty = ing.qty;
+      }
+      const qtyStr = Number.isInteger(qty) ? qty.toString() : qty.toFixed(1);
+      return `☐ ${ing.name} — ${qtyStr} ${pluralizeUnit(ing.unit, qty)}`;
+    });
+    const text = `🛒 ${t('recipes.shoppingList')} — ${name}\n(${t('recipes.shareFor', { count: portions })})\n\n${lines.join('\n')}`;
+    await Clipboard.setStringAsync(text);
+    setSnackMessage(t('recipes.shoppingListCopied'));
+    setSnackVisible(true);
   };
 
   const formatRatio = (r: number): string => {
@@ -260,10 +379,11 @@ export default function RecettesScreen() {
                 label={t('recipes.qty')}
                 value={ingredient.qty === 0 ? '' : ingredient.qty.toString()}
                 onChangeText={(v) => {
-                  const num = parseFloat(v.replace(',', '.'));
+                  const s = sanitizeNumericInput(v);
+                  const num = parseFloat(s);
                   updateIngredientField(ingredient.id, 'qty', isNaN(num) ? 0 : num);
                 }}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
                 mode="outlined"
                 dense
                 style={styles.qtyInput}
@@ -376,9 +496,9 @@ export default function RecettesScreen() {
                 value={displayQty}
                 onChangeText={(v) => {
                   if (!canDrive) return;
-                  handleAdjustedQtyChange(ingredient.id, v);
+                  handleAdjustedQtyChange(ingredient.id, sanitizeNumericInput(v));
                 }}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
                 mode="outlined"
                 dense
                 disabled={!canDrive}
@@ -461,6 +581,22 @@ export default function RecettesScreen() {
             </View>
           </View>
 
+          {recipes.length > 3 && (
+            <View style={styles.searchContainer}>
+              <TextInput
+                placeholder={t('recipes.searchPlaceholder')}
+                value={recipeSearch}
+                onChangeText={setRecipeSearch}
+                mode="outlined"
+                dense
+                left={<TextInput.Icon icon="magnify" size={18} />}
+                right={recipeSearch ? <TextInput.Icon icon="close" size={18} onPress={() => setRecipeSearch('')} /> : undefined}
+                style={styles.searchInput}
+                activeOutlineColor={theme.colors.primary}
+              />
+            </View>
+          )}
+
           {recipes.length === 0 ? (
             <EmptyState
               icon="book-open-blank-variant"
@@ -469,10 +605,11 @@ export default function RecettesScreen() {
             />
           ) : (
             <FlatList
-              data={recipes}
+              data={filteredRecipes}
               keyExtractor={(item) => item.id}
               renderItem={renderRecipeItem}
               contentContainerStyle={styles.listContent}
+              keyboardShouldPersistTaps="handled"
             />
           )}
 
@@ -493,6 +630,9 @@ export default function RecettesScreen() {
           </PremiumGate>
         </View>
         <AdBanner />
+        <Snackbar visible={snackVisible} onDismiss={() => setSnackVisible(false)} duration={2000}>
+          {snackMessage}
+        </Snackbar>
       </SafeAreaView>
     );
   }
@@ -551,12 +691,13 @@ export default function RecettesScreen() {
                 <TextInput
                   label={t('recipes.basePortions')}
                   value={basePortions}
-                  onChangeText={setBasePortions}
-                  keyboardType="numeric"
+                  onChangeText={(v) => setBasePortions(sanitizeNumericInput(v))}
+                  keyboardType="decimal-pad"
                   mode="outlined"
                   dense
                   style={styles.portionInput}
                   activeOutlineColor={theme.colors.primary}
+                  error={invalidPortions && basePortions !== ''}
                 />
                 <Text variant="headlineSmall" style={{ color: theme.colors.primary, marginHorizontal: 12 }}>
                   →
@@ -564,8 +705,8 @@ export default function RecettesScreen() {
                 <TextInput
                   label={t('recipes.newPortions')}
                   value={newPortions}
-                  onChangeText={setNewPortions}
-                  keyboardType="numeric"
+                  onChangeText={(v) => setNewPortions(sanitizeNumericInput(v))}
+                  keyboardType="decimal-pad"
                   mode="outlined"
                   dense
                   style={styles.portionInput}
@@ -574,7 +715,7 @@ export default function RecettesScreen() {
               </View>
               {/* Quick multiply buttons */}
               <View style={styles.quickMultiplyRow}>
-                {[0.5, 2, 3].map((factor) => (
+                {multipliers.map((factor) => (
                   <Chip
                     key={factor}
                     onPress={() => {
@@ -643,6 +784,29 @@ export default function RecettesScreen() {
             </Button>
           )}
 
+          {editingId && (
+            <View style={styles.secondaryActionsRow}>
+              <Button
+                mode="contained-tonal"
+                onPress={handleCopyAll}
+                icon="content-copy"
+                compact
+                style={styles.secondaryButton}
+              >
+                {t('recipes.copyAll')}
+              </Button>
+              <Button
+                mode="contained-tonal"
+                onPress={handleShoppingList}
+                icon="cart-outline"
+                compact
+                style={styles.secondaryButton}
+              >
+                {t('recipes.shoppingList')}
+              </Button>
+            </View>
+          )}
+
           <View style={styles.actionsRow}>
             <Button
               mode="outlined"
@@ -678,6 +842,9 @@ export default function RecettesScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
       <AdBanner />
+      <Snackbar visible={snackVisible} onDismiss={() => setSnackVisible(false)} duration={2000}>
+        {snackMessage}
+      </Snackbar>
     </SafeAreaView>
   );
 }
@@ -851,4 +1018,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 20,
   },
+  searchContainer: { paddingHorizontal: 20, marginBottom: 8 },
+  searchInput: { fontSize: 14 },
+  secondaryActionsRow: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginTop: 16 },
+  secondaryButton: { borderRadius: 12 },
 });

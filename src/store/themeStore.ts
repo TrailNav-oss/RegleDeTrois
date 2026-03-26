@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Sentry } from '../config/sentry';
 
 interface ThemeState {
   isDarkMode: boolean;
@@ -16,6 +17,9 @@ export const useThemeStore = create<ThemeState>()(
     {
       name: 'theme-store',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) try { Sentry.captureException(error); } catch {}
+      },
     }
   )
 );

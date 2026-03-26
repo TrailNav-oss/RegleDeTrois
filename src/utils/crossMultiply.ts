@@ -18,21 +18,25 @@ export function solveCrossMultiply(fields: {
   }
 
   // A/B = C/X → A*X = B*C
+  let field: 'a' | 'b' | 'c' | 'x';
+  let value: number;
+
   if (a === null) {
     if (x === 0) return { error: 'DIVISION_BY_ZERO' };
-    return { field: 'a', value: (b! * c!) / x! };
-  }
-  if (b === null) {
+    field = 'a'; value = (b! * c!) / x!;
+  } else if (b === null) {
     if (c === 0) return { error: 'DIVISION_BY_ZERO' };
-    return { field: 'b', value: (a! * x!) / c! };
-  }
-  if (c === null) {
+    field = 'b'; value = (a! * x!) / c!;
+  } else if (c === null) {
     if (b === 0) return { error: 'DIVISION_BY_ZERO' };
-    return { field: 'c', value: (a! * x!) / b! };
+    field = 'c'; value = (a! * x!) / b!;
+  } else {
+    if (a === 0) return { error: 'DIVISION_BY_ZERO' };
+    field = 'x'; value = (b! * c!) / a!;
   }
-  // x === null
-  if (a === 0) return { error: 'DIVISION_BY_ZERO' };
-  return { field: 'x', value: (b! * c!) / a! };
+
+  if (!isFinite(value)) return { error: 'INVALID_RESULT' };
+  return { field, value };
 }
 
 /**

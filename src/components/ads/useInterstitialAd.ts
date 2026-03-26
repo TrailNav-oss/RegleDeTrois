@@ -49,6 +49,8 @@ export function useInterstitialAd() {
       unsubLoaded();
       unsubClosed();
       unsubError();
+      adRef.current = null;
+      loadedRef.current = false;
     };
   }, [isPremium]);
 

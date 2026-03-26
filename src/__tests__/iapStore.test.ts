@@ -22,6 +22,11 @@ const mockRequestPurchase = jest.fn().mockResolvedValue({});
 const mockGetAvailablePurchases = jest.fn().mockResolvedValue([]);
 const mockFinishTransaction = jest.fn().mockResolvedValue(true);
 
+// Mock Sentry
+jest.mock('../config/sentry', () => ({
+  Sentry: { captureException: jest.fn() },
+}));
+
 jest.mock('react-native-iap', () => ({
   initConnection: () => mockInitConnection(),
   endConnection: () => mockEndConnection(),

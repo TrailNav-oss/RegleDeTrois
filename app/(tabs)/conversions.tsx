@@ -24,6 +24,9 @@ import {
 import { AdBanner } from '../../src/components/ads/AdBanner';
 import { lightHaptic } from '../../src/utils/haptics';
 import { useTranslation } from '../../src/i18n/useTranslation';
+import { sanitizeNumericInput } from '../../src/utils/sanitize';
+import { useHistoryStore } from '../../src/store/historyStore';
+import { HistoryList } from '../../src/components/ui/HistoryList';
 
 const SPACING = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 const RADIUS = { sm: 8, md: 12, lg: 16 };
@@ -68,7 +71,7 @@ function UnitSelector({ label, selected, onSelect, units, theme }: {
 
   return (
     <View style={styles.unitSelectorContainer}>
-      <Text style={styles.unitSelectorLabel}>{label}</Text>
+      <Text style={[styles.unitSelectorLabel, { color: theme.colors.onSurfaceVariant }]}>{label}</Text>
       <View>
         <ScrollView
           horizontal
@@ -85,6 +88,7 @@ function UnitSelector({ label, selected, onSelect, units, theme }: {
                 icon={() => (
                   <Text style={[
                     styles.unitChipText,
+                    { color: theme.colors.onSurface },
                     selected === u.id && { color: theme.colors.onPrimary, fontWeight: '700' },
                   ]}>
                     {u.label}
@@ -95,7 +99,7 @@ function UnitSelector({ label, selected, onSelect, units, theme }: {
                   styles.unitChip,
                   selected === u.id
                     ? { backgroundColor: theme.colors.primary }
-                    : { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
+                    : { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.outlineVariant },
                 ]}
                 size={16}
               />
@@ -103,7 +107,7 @@ function UnitSelector({ label, selected, onSelect, units, theme }: {
           </View>
         </ScrollView>
         {showMore && (
-          <View style={[styles.scrollIndicator, { backgroundColor: COLORS.background }]} pointerEvents="none">
+          <View style={[styles.scrollIndicator, { backgroundColor: theme.colors.background }]} pointerEvents="none">
             <Text style={[styles.scrollIndicatorIcon, { color: theme.colors.primary }]}>›</Text>
           </View>
         )}
@@ -123,7 +127,14 @@ export default function ConversionsScreen() {
   const [result, setResult] = useState<string | null>(null);
   const [snackVisible, setSnackVisible] = useState(false);
 
+  const conversionEntries = useHistoryStore((s) => s.conversionEntries);
+  const addConversionEntry = useHistoryStore((s) => s.addConversionEntry);
+  const removeConversionEntry = useHistoryStore((s) => s.removeConversionEntry);
+  const clearConversionHistory = useHistoryStore((s) => s.clearConversionHistory);
+
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   const units = getUnitsForCategory(category);
 
@@ -169,6 +180,10 @@ export default function ConversionsScreen() {
   const handleCopy = async () => {
     if (result) {
       await Clipboard.setStringAsync(result);
+      const parsedValue = parseFloat(inputValue.replace(',', '.'));
+      if (!isNaN(parsedValue)) {
+        addConversionEntry({ category, fromUnit, toUnit, value: parsedValue, result });
+      }
       setSnackVisible(true);
       lightHaptic();
     }
@@ -179,7 +194,7 @@ export default function ConversionsScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: COLORS.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -192,13 +207,13 @@ export default function ConversionsScreen() {
           <View style={styles.headerRow}>
             <View style={styles.headerSpacer} />
             <View style={styles.headerCenter}>
-              <Text style={styles.title}>{t('conversions.title')}</Text>
+              <Text style={[styles.title, { color: theme.colors.onSurface }]}>{t('conversions.title')}</Text>
             </View>
             <IconButton
               icon="help-circle-outline"
               size={24}
               onPress={() => Alert.alert(t('conversions.helpTitle'), t('conversions.helpBody'))}
-              iconColor={COLORS.textSecondary}
+              iconColor={theme.colors.onSurfaceVariant}
             />
           </View>
 
@@ -215,18 +230,18 @@ export default function ConversionsScreen() {
           />
 
           {/* Conversion card */}
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
             {/* From */}
             <UnitSelector label={t('conversions.from')} selected={fromUnit} onSelect={setFromUnit} units={units} theme={theme} />
 
             <TextInput
               label={t('conversions.value')}
               value={inputValue}
-              onChangeText={setInputValue}
-              keyboardType="numeric"
+              onChangeText={(v) => setInputValue(sanitizeNumericInput(v))}
+              keyboardType="decimal-pad"
               mode="outlined"
-              style={styles.input}
-              outlineColor={COLORS.border}
+              style={[styles.input, { backgroundColor: theme.colors.surface }]}
+              outlineColor={theme.colors.outlineVariant}
               activeOutlineColor={theme.colors.primary}
               outlineStyle={{ borderRadius: RADIUS.md }}
               right={<TextInput.Affix text={fromUnit} />}
@@ -234,7 +249,7 @@ export default function ConversionsScreen() {
 
             {/* Swap button */}
             <View style={styles.swapRow}>
-              <View style={[styles.swapLine, { backgroundColor: COLORS.border }]} />
+              <View style={[styles.swapLine, { backgroundColor: theme.colors.outlineVariant }]} />
               <IconButton
                 icon="swap-vertical"
                 size={28}
@@ -242,7 +257,7 @@ export default function ConversionsScreen() {
                 iconColor={theme.colors.primary}
                 style={[styles.swapButton, { backgroundColor: theme.colors.primaryContainer }]}
               />
-              <View style={[styles.swapLine, { backgroundColor: COLORS.border }]} />
+              <View style={[styles.swapLine, { backgroundColor: theme.colors.outlineVariant }]} />
             </View>
 
             {/* To */}
@@ -257,7 +272,7 @@ export default function ConversionsScreen() {
                 ]}
               >
                 <View style={styles.resultContent}>
-                  <Text style={styles.resultLabel}>{t('conversions.result')}</Text>
+                  <Text style={[styles.resultLabel, { color: theme.colors.onSurfaceVariant }]}>{t('conversions.result')}</Text>
                   <Text style={[styles.resultValue, { color: theme.colors.primary }]}>
                     {result} {toUnit}
                   </Text>
@@ -271,6 +286,33 @@ export default function ConversionsScreen() {
               </Animated.View>
             )}
           </View>
+
+          <HistoryList
+            entries={conversionEntries}
+            onRemove={removeConversionEntry}
+            onClear={clearConversionHistory}
+            onPress={(entry) => {
+              setCategory(entry.category as ConversionCategory);
+              setTimeout(() => {
+                if (!mountedRef.current) return;
+                setFromUnit(entry.fromUnit);
+                setToUnit(entry.toUnit);
+                setInputValue(entry.value.toString());
+              }, 50);
+              lightHaptic();
+            }}
+            title={t('conversions.history')}
+            searchPlaceholder={t('conversions.searchHistory')}
+            searchFilter={(entry, q) =>
+              entry.value.toString().includes(q) || entry.result.includes(q) ||
+              entry.fromUnit.toLowerCase().includes(q) || entry.toUnit.toLowerCase().includes(q)
+            }
+            renderContent={(entry) => (
+              <Text style={{ fontSize: 14, color: theme.colors.onSurface }}>
+                {entry.value} {entry.fromUnit} → <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>{entry.result} {entry.toUnit}</Text>
+              </Text>
+            )}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
       <AdBanner />
@@ -341,4 +383,13 @@ const styles = StyleSheet.create({
   resultContent: { flex: 1, gap: 4 },
   resultLabel: { fontSize: 13, color: COLORS.textSecondary },
   resultValue: { fontSize: 24, fontWeight: '700' },
+
+  historySection: { marginTop: SPACING.xxl },
+  historyHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.sm },
+  historyTitle: { fontSize: 16, fontWeight: '600', color: COLORS.textPrimary },
+  swipeDelete: { justifyContent: 'center', alignItems: 'center', width: 56, borderRadius: RADIUS.md, marginBottom: SPACING.sm },
+  historyItem: { backgroundColor: COLORS.surface, borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.border, padding: SPACING.md, marginBottom: SPACING.sm },
+  historyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  historyEquation: { fontSize: 14, color: COLORS.textPrimary, flex: 1 },
+  historyTime: { fontSize: 12, color: COLORS.textSecondary },
 });

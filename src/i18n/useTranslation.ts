@@ -1,16 +1,19 @@
 import { useCallback } from 'react';
-import i18n from './index';
+import i18n, { SUPPORTED_LOCALES } from './index';
 import { getLocales } from 'expo-localization';
 import { useLanguageStore } from '../store/languageStore';
+
+function resolveDeviceLocale(): string {
+  const code = getLocales()[0]?.languageCode ?? 'en';
+  return (SUPPORTED_LOCALES as readonly string[]).includes(code) ? code : 'en';
+}
 
 export function useTranslation() {
   const language = useLanguageStore((s) => s.language);
 
   // Resolve effective locale
   const resolvedLocale =
-    language === 'auto'
-      ? (getLocales()[0]?.languageCode === 'en' ? 'en' : 'fr')
-      : language;
+    language === 'auto' ? resolveDeviceLocale() : language;
 
   // Sync i18n locale
   i18n.locale = resolvedLocale;

@@ -58,6 +58,20 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 packageJson.version = newVersion;
 fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n', 'utf-8');
 
+// --- Update android/app/build.gradle ---
+const buildGradlePath = path.join(root, 'android', 'app', 'build.gradle');
+let gradleUpdated = false;
+if (fs.existsSync(buildGradlePath)) {
+  let gradle = fs.readFileSync(buildGradlePath, 'utf-8');
+  const newGradle = gradle
+    .replace(/versionCode\s+\d+/, `versionCode ${build}`)
+    .replace(/versionName\s+"[^"]+"/, `versionName "${newVersion}"`);
+  if (newGradle !== gradle) {
+    fs.writeFileSync(buildGradlePath, newGradle, 'utf-8');
+    gradleUpdated = true;
+  }
+}
+
 // --- Summary ---
 console.log('');
 console.log(`  Bump ${bump}: ${oldVersion} -> ${newVersion}`);
@@ -66,6 +80,7 @@ console.log('');
 console.log('  Updated files:');
 console.log(`    - app.json       (version: "${newVersion}", versionCode: ${build})`);
 console.log(`    - package.json   (version: "${newVersion}")`);
-console.log('');
-console.log('  Note: run "npx expo prebuild --platform android" to apply to native code.');
+if (gradleUpdated) {
+  console.log(`    - build.gradle   (versionCode: ${build}, versionName: "${newVersion}")`);
+}
 console.log('');

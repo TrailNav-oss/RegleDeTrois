@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, Animated, KeyboardAvoidingView, Platform, Pressable, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Animated, KeyboardAvoidingView, Platform, Alert, Keyboard } from 'react-native';
 import { Text, TextInput, Button, useTheme, IconButton, Snackbar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Swipeable } from 'react-native-gesture-handler';
 import * as Clipboard from 'expo-clipboard';
 import { solveCrossMultiply } from '../../src/utils/crossMultiply';
 import { useAdsStore } from '../../src/store/adsStore';
@@ -11,6 +10,8 @@ import { AdBanner } from '../../src/components/ads/AdBanner';
 import { useInterstitialAd } from '../../src/components/ads/useInterstitialAd';
 import { successHaptic, lightHaptic } from '../../src/utils/haptics';
 import { useTranslation } from '../../src/i18n/useTranslation';
+import { sanitizeNumericInput } from '../../src/utils/sanitize';
+import { HistoryList } from '../../src/components/ui/HistoryList';
 import type { HistoryEntry } from '../../src/types/history';
 
 // ── Design tokens ──────────────────────────────────────────────
@@ -36,7 +37,6 @@ export default function SimpleScreen() {
   const [resultField, setResultField] = useState<FieldKey | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [snackVisible, setSnackVisible] = useState(false);
-  const [historySearch, setHistorySearch] = useState('');
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const incrementCalc = useAdsStore((s) => s.incrementCalc);
@@ -101,6 +101,7 @@ export default function SimpleScreen() {
 
     setError(null);
     setResultField(result.field);
+    Keyboard.dismiss();
 
     fadeAnim.setValue(0);
     scaleAnim.setValue(0.8);
@@ -172,14 +173,6 @@ export default function SimpleScreen() {
     lightHaptic();
   };
 
-  const formatRelativeTime = (timestamp: number): string => {
-    const diff = Math.floor((Date.now() - timestamp) / 1000);
-    if (diff < 60) return t('calculator.justNow');
-    if (diff < 3600) return t('calculator.minutesAgo', { count: Math.floor(diff / 60) });
-    if (diff < 86400) return t('calculator.hoursAgo', { count: Math.floor(diff / 3600) });
-    return t('calculator.daysAgo', { count: Math.floor(diff / 86400) });
-  };
-
   const renderField = (key: FieldKey, label: string) => {
     const isResult = resultField === key;
     return (
@@ -192,16 +185,17 @@ export default function SimpleScreen() {
         <TextInput
           label={label}
           value={fields[key]}
-          onChangeText={(v) => handleChange(key, v)}
-          keyboardType="numeric"
+          onChangeText={(v) => handleChange(key, sanitizeNumericInput(v))}
+          keyboardType="decimal-pad"
           mode="outlined"
           style={[
             styles.expertInput,
+            { backgroundColor: theme.colors.surface },
             isResult && { backgroundColor: theme.colors.primaryContainer },
           ]}
-          outlineColor={isResult ? theme.colors.primary : COLORS.border}
+          outlineColor={isResult ? theme.colors.primary : theme.colors.outlineVariant}
           activeOutlineColor={theme.colors.primary}
-          textColor={COLORS.textPrimary}
+          textColor={theme.colors.onSurface}
           outlineStyle={{ borderRadius: RADIUS.md }}
           right={isResult ? <TextInput.Icon icon="check-circle" color={theme.colors.primary} /> : undefined}
         />
@@ -212,7 +206,7 @@ export default function SimpleScreen() {
   const hasResult = resultField !== null;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: COLORS.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -225,19 +219,19 @@ export default function SimpleScreen() {
           <View style={styles.headerRow}>
             <View style={styles.headerSpacer} />
             <View style={styles.headerCenter}>
-              <Text style={styles.title}>{t('calculator.title')}</Text>
-              <Text style={styles.subtitle}>{t('calculator.subtitleExpert')}</Text>
+              <Text style={[styles.title, { color: theme.colors.onSurface }]}>{t('calculator.title')}</Text>
+              <Text style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}>{t('calculator.subtitleExpert')}</Text>
             </View>
             <IconButton
               icon="help-circle-outline"
               size={24}
               onPress={() => Alert.alert(t('calculator.helpTitle'), t('calculator.helpBody'))}
-              iconColor={COLORS.textSecondary}
+              iconColor={theme.colors.onSurfaceVariant}
             />
           </View>
 
           {/* ── Card principale ── */}
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
             <View style={styles.equation}>
               <View style={styles.fraction}>
                 {renderField('a', 'A')}
@@ -255,8 +249,8 @@ export default function SimpleScreen() {
 
           {/* ── Error card ── */}
           {error && (
-            <View style={styles.errorCard}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View style={[styles.errorCard, { backgroundColor: theme.colors.errorContainer, borderColor: theme.colors.error }]}>
+              <Text style={[styles.errorText, { color: theme.colors.onErrorContainer }]}>{error}</Text>
             </View>
           )}
 
@@ -286,85 +280,41 @@ export default function SimpleScreen() {
           </View>
 
           {/* ── Historique ── */}
-          {historyEntries.length > 0 && (
-            <View style={styles.historySection}>
-              <View style={styles.historyHeader}>
-                <Text style={styles.historyTitle}>{t('calculator.history')}</Text>
-                <IconButton
-                  icon="delete-outline"
-                  size={20}
-                  onPress={clearHistory}
-                  iconColor={theme.colors.error}
-                />
-              </View>
-              {historyEntries.length > 3 && (
-                <TextInput
-                  placeholder={t('calculator.searchHistory')}
-                  value={historySearch}
-                  onChangeText={setHistorySearch}
-                  mode="outlined"
-                  dense
-                  left={<TextInput.Icon icon="magnify" size={18} />}
-                  right={historySearch ? <TextInput.Icon icon="close" size={18} onPress={() => setHistorySearch('')} /> : undefined}
-                  style={styles.searchInput}
-                  outlineColor={COLORS.border}
-                  activeOutlineColor={theme.colors.primary}
-                  outlineStyle={{ borderRadius: RADIUS.md }}
-                />
-              )}
-              {historyEntries.filter((entry) => {
-                if (!historySearch.trim()) return true;
-                const q = historySearch.trim().toLowerCase();
-                const fmt = (n: number) => n.toString();
-                return fmt(entry.a).includes(q) || fmt(entry.b).includes(q) || fmt(entry.c).includes(q) || fmt(entry.x).includes(q);
-              }).map((entry) => {
-                const fmt = (n: number) =>
-                  Number.isInteger(n) ? n.toString() : n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
-                return (
-                  <Swipeable
-                    key={entry.id}
-                    renderRightActions={() => (
-                      <Pressable
-                        onPress={() => removeEntry(entry.id)}
-                        style={[styles.swipeDelete, { backgroundColor: theme.colors.error }]}
-                      >
-                        <IconButton icon="delete" iconColor="#fff" size={20} />
-                      </Pressable>
-                    )}
-                    overshootRight={false}
-                  >
-                    <Pressable onPress={() => loadEntry(entry)} style={({ pressed }) => [
-                      styles.historyItem,
-                      pressed && { backgroundColor: COLORS.segmentBg },
-                    ]}>
-                      <View style={styles.historyRow}>
-                        <Text style={styles.historyEquation}>
-                          <Text style={{ color: entry.solvedField === 'a' ? theme.colors.primary : COLORS.textPrimary, fontWeight: entry.solvedField === 'a' ? 'bold' : 'normal' }}>
-                            {fmt(entry.a)}
-                          </Text>
-                          {' / '}
-                          <Text style={{ color: entry.solvedField === 'b' ? theme.colors.primary : COLORS.textPrimary, fontWeight: entry.solvedField === 'b' ? 'bold' : 'normal' }}>
-                            {fmt(entry.b)}
-                          </Text>
-                          {' = '}
-                          <Text style={{ color: entry.solvedField === 'c' ? theme.colors.primary : COLORS.textPrimary, fontWeight: entry.solvedField === 'c' ? 'bold' : 'normal' }}>
-                            {fmt(entry.c)}
-                          </Text>
-                          {' / '}
-                          <Text style={{ color: entry.solvedField === 'x' ? theme.colors.primary : COLORS.textPrimary, fontWeight: entry.solvedField === 'x' ? 'bold' : 'normal' }}>
-                            {fmt(entry.x)}
-                          </Text>
-                        </Text>
-                        <Text style={styles.historyTime}>
-                          {formatRelativeTime(entry.createdAt)}
-                        </Text>
-                      </View>
-                    </Pressable>
-                  </Swipeable>
-                );
-              })}
-            </View>
-          )}
+          <HistoryList
+            entries={historyEntries}
+            onRemove={removeEntry}
+            onClear={clearHistory}
+            onPress={loadEntry}
+            title={t('calculator.history')}
+            searchPlaceholder={t('calculator.searchHistory')}
+            searchFilter={(entry, q) =>
+              entry.a.toString().includes(q) || entry.b.toString().includes(q) ||
+              entry.c.toString().includes(q) || entry.x.toString().includes(q)
+            }
+            renderContent={(entry) => {
+              const fmt = (n: number) =>
+                Number.isInteger(n) ? n.toString() : n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+              return (
+                <Text style={{ fontSize: 14, color: theme.colors.onSurface }}>
+                  <Text style={{ color: entry.solvedField === 'a' ? theme.colors.primary : theme.colors.onSurface, fontWeight: entry.solvedField === 'a' ? 'bold' : 'normal' }}>
+                    {fmt(entry.a)}
+                  </Text>
+                  {' / '}
+                  <Text style={{ color: entry.solvedField === 'b' ? theme.colors.primary : theme.colors.onSurface, fontWeight: entry.solvedField === 'b' ? 'bold' : 'normal' }}>
+                    {fmt(entry.b)}
+                  </Text>
+                  {' = '}
+                  <Text style={{ color: entry.solvedField === 'c' ? theme.colors.primary : theme.colors.onSurface, fontWeight: entry.solvedField === 'c' ? 'bold' : 'normal' }}>
+                    {fmt(entry.c)}
+                  </Text>
+                  {' / '}
+                  <Text style={{ color: entry.solvedField === 'x' ? theme.colors.primary : theme.colors.onSurface, fontWeight: entry.solvedField === 'x' ? 'bold' : 'normal' }}>
+                    {fmt(entry.x)}
+                  </Text>
+                </Text>
+              );
+            }}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
       <AdBanner />

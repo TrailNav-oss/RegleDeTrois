@@ -12,7 +12,9 @@ export function percentOf(percent: number, value: number): number {
  */
 export function percentVariation(oldValue: number, newValue: number): number | { error: string } {
   if (oldValue === 0) return { error: 'DIVISION_BY_ZERO' };
-  return ((newValue - oldValue) / Math.abs(oldValue)) * 100;
+  const result = ((newValue - oldValue) / Math.abs(oldValue)) * 100;
+  if (!isFinite(result)) return { error: 'INVALID_RESULT' };
+  return result;
 }
 
 /**
@@ -37,7 +39,9 @@ export function decreaseByPercent(value: number, percent: number): number {
  */
 export function whatPercent(part: number, total: number): number | { error: string } {
   if (total === 0) return { error: 'DIVISION_BY_ZERO' };
-  return (part / total) * 100;
+  const result = (part / total) * 100;
+  if (!isFinite(result)) return { error: 'INVALID_RESULT' };
+  return result;
 }
 
 /**

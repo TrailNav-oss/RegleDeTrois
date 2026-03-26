@@ -7,8 +7,9 @@ import {
   Platform,
   Animated,
   Alert,
+  Keyboard,
 } from 'react-native';
-import { Text, TextInput, Button, useTheme, IconButton, Chip, Snackbar, SegmentedButtons } from 'react-native-paper';
+import { Text, TextInput, Button, useTheme, IconButton, Chip, Snackbar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import {
@@ -24,10 +25,12 @@ import { useInterstitialAd } from '../../src/components/ads/useInterstitialAd';
 import { useAdsStore } from '../../src/store/adsStore';
 import { successHaptic, lightHaptic } from '../../src/utils/haptics';
 import { useTranslation } from '../../src/i18n/useTranslation';
+import { sanitizeNumericInput } from '../../src/utils/sanitize';
+import { useHistoryStore } from '../../src/store/historyStore';
+import { usePreferencesStore } from '../../src/store/preferencesStore';
+import { HistoryList } from '../../src/components/ui/HistoryList';
 
 type CalcMode = 'percentOf' | 'variation' | 'increase' | 'decrease' | 'whatPercent';
-
-const PRESETS = [5, 10, 15, 20, 25, 50];
 
 const SPACING = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 const RADIUS = { sm: 8, md: 12, lg: 16 };
@@ -44,6 +47,11 @@ export default function PourcentagesScreen() {
   const { t } = useTranslation();
   const incrementCalc = useAdsStore((s) => s.incrementCalc);
   const { showIfReady } = useInterstitialAd();
+  const PRESETS = usePreferencesStore((s) => s.percentagePresets);
+  const percentageEntries = useHistoryStore((s) => s.percentageEntries);
+  const addPercentageEntry = useHistoryStore((s) => s.addPercentageEntry);
+  const removePercentageEntry = useHistoryStore((s) => s.removePercentageEntry);
+  const clearPercentageHistory = useHistoryStore((s) => s.clearPercentageHistory);
 
   const [mode, setMode] = useState<CalcMode>('percentOf');
   const [field1, setField1] = useState('');
@@ -71,6 +79,7 @@ export default function PourcentagesScreen() {
   };
 
   const calculate = useCallback(() => {
+    Keyboard.dismiss();
     const v1 = parseVal(field1);
     const v2 = parseVal(field2);
 
@@ -115,6 +124,7 @@ export default function PourcentagesScreen() {
     animateResult();
     incrementCalc();
     successHaptic();
+    addPercentageEntry({ mode, field1: v1, field2: v2, result: suffix ? `${formatted}${suffix}` : formatted });
     setTimeout(() => showIfReady(), 300);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [field1, field2, mode, incrementCalc, showIfReady]);
@@ -148,6 +158,17 @@ export default function PourcentagesScreen() {
     setError(null);
   };
 
+  const getModeLabel = (m: string): string => {
+    switch (m) {
+      case 'percentOf': return t('percentages.percentOf');
+      case 'variation': return t('percentages.variation');
+      case 'increase': return t('percentages.increase');
+      case 'decrease': return t('percentages.decrease');
+      case 'whatPercent': return t('percentages.whatPercent');
+      default: return m;
+    }
+  };
+
   const getFieldLabels = (): { label1: string; label2: string } => {
     switch (mode) {
       case 'percentOf': return { label1: `${t('percentages.percent')} (X)`, label2: `${t('percentages.value')} (Y)` };
@@ -163,7 +184,7 @@ export default function PourcentagesScreen() {
   const getFormulaElements = (): FormulaElement[] => {
     switch (mode) {
       case 'percentOf': return [
-        { type: 'var', label: 'X' }, { type: 'text', label: ' %  de  ' }, { type: 'var', label: 'Y' }, { type: 'text', label: '  =  ?' },
+        { type: 'var', label: 'X' }, { type: 'text', label: ` %  ${t('percentages.formulaOf')}  ` }, { type: 'var', label: 'Y' }, { type: 'text', label: '  =  ?' },
       ];
       case 'variation': return [
         { type: 'var', label: 'A' }, { type: 'text', label: '  →  ' }, { type: 'var', label: 'B' }, { type: 'text', label: '  =  ? %' },
@@ -192,7 +213,7 @@ export default function PourcentagesScreen() {
   ];
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: COLORS.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -205,13 +226,13 @@ export default function PourcentagesScreen() {
           <View style={styles.headerRow}>
             <View style={styles.headerSpacer} />
             <View style={styles.headerCenter}>
-              <Text style={styles.title}>{t('percentages.title')}</Text>
+              <Text style={[styles.title, { color: theme.colors.onSurface }]}>{t('percentages.title')}</Text>
             </View>
             <IconButton
               icon="help-circle-outline"
               size={24}
               onPress={() => Alert.alert(t('percentages.helpTitle'), t('percentages.helpBody'))}
-              iconColor={COLORS.textSecondary}
+              iconColor={theme.colors.onSurfaceVariant}
             />
           </View>
 
@@ -240,7 +261,7 @@ export default function PourcentagesScreen() {
           </ScrollView>
 
           {/* Card principale */}
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
             {/* Formula display */}
             <View style={styles.formulaRow}>
               {getFormulaElements().map((el, i) =>
@@ -249,7 +270,7 @@ export default function PourcentagesScreen() {
                     <Text style={[styles.varBadgeText, { color: theme.colors.primary }]}>{el.label}</Text>
                   </View>
                 ) : (
-                  <Text key={i} style={styles.formulaText}>{el.label}</Text>
+                  <Text key={i} style={[styles.formulaText, { color: theme.colors.onSurfaceVariant }]}>{el.label}</Text>
                 ),
               )}
             </View>
@@ -280,11 +301,11 @@ export default function PourcentagesScreen() {
             <TextInput
               label={labels.label1}
               value={field1}
-              onChangeText={(v) => { setField1(v); setResult(null); }}
-              keyboardType="numeric"
+              onChangeText={(v) => { setField1(sanitizeNumericInput(v)); setResult(null); }}
+              keyboardType="decimal-pad"
               mode="outlined"
-              style={styles.input}
-              outlineColor={COLORS.border}
+              style={[styles.input, { backgroundColor: theme.colors.surface }]}
+              outlineColor={theme.colors.outlineVariant}
               activeOutlineColor={theme.colors.primary}
               outlineStyle={{ borderRadius: RADIUS.md }}
               right={
@@ -297,11 +318,11 @@ export default function PourcentagesScreen() {
             <TextInput
               label={labels.label2}
               value={field2}
-              onChangeText={(v) => { setField2(v); setResult(null); }}
-              keyboardType="numeric"
+              onChangeText={(v) => { setField2(sanitizeNumericInput(v)); setResult(null); }}
+              keyboardType="decimal-pad"
               mode="outlined"
-              style={styles.input}
-              outlineColor={COLORS.border}
+              style={[styles.input, { backgroundColor: theme.colors.surface }]}
+              outlineColor={theme.colors.outlineVariant}
               activeOutlineColor={theme.colors.primary}
               outlineStyle={{ borderRadius: RADIUS.md }}
             />
@@ -326,7 +347,7 @@ export default function PourcentagesScreen() {
                 { backgroundColor: theme.colors.primaryContainer, opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
               ]}
             >
-              <Text style={styles.resultLabel}>{t('percentages.result')}</Text>
+              <Text style={[styles.resultLabel, { color: theme.colors.onSurfaceVariant }]}>{t('percentages.result')}</Text>
               <Text style={[styles.resultValue, { color: theme.colors.primary }]}>
                 {result}
               </Text>
@@ -342,8 +363,8 @@ export default function PourcentagesScreen() {
 
           {/* Error */}
           {error && (
-            <View style={styles.errorCard}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View style={[styles.errorCard, { backgroundColor: theme.colors.errorContainer, borderColor: theme.colors.error }]}>
+              <Text style={[styles.errorText, { color: theme.colors.onErrorContainer }]}>{error}</Text>
             </View>
           )}
 
@@ -357,6 +378,33 @@ export default function PourcentagesScreen() {
           >
             {t('percentages.reset')}
           </Button>
+
+          <HistoryList
+            entries={percentageEntries}
+            onRemove={removePercentageEntry}
+            onClear={clearPercentageHistory}
+            onPress={(entry) => {
+              setMode(entry.mode as CalcMode);
+              setField1(entry.field1.toString());
+              setField2(entry.field2.toString());
+              setResult(entry.result);
+              animateResult();
+              lightHaptic();
+            }}
+            title={t('percentages.history')}
+            searchPlaceholder={t('percentages.searchHistory')}
+            searchFilter={(entry, q) =>
+              entry.result.toLowerCase().includes(q) || entry.field1.toString().includes(q) || entry.field2.toString().includes(q)
+            }
+            renderContent={(entry) => (
+              <>
+                <Text style={{ fontSize: 11, color: theme.colors.onSurfaceVariant, marginBottom: 2 }}>{getModeLabel(entry.mode)}</Text>
+                <Text style={{ fontSize: 14, color: theme.colors.onSurface }}>
+                  {entry.field1} , {entry.field2} → <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>{entry.result}</Text>
+                </Text>
+              </>
+            )}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
       <AdBanner />
@@ -449,4 +497,15 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 14, color: '#991B1B', textAlign: 'center' },
 
   resetButton: { height: 48, borderRadius: RADIUS.md, justifyContent: 'center', marginTop: SPACING.lg },
+
+  historySection: { marginTop: SPACING.xxl },
+  historyHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.sm },
+  historyTitle: { fontSize: 16, fontWeight: '600', color: COLORS.textPrimary },
+  searchInput: { marginBottom: SPACING.md, backgroundColor: COLORS.surface, fontSize: 14 },
+  swipeDelete: { justifyContent: 'center', alignItems: 'center', width: 56, borderRadius: RADIUS.md, marginBottom: SPACING.sm },
+  historyItem: { backgroundColor: COLORS.surface, borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.border, padding: SPACING.md, marginBottom: SPACING.sm },
+  historyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  historyMode: { fontSize: 11, color: COLORS.textSecondary, marginBottom: 2 },
+  historyEquation: { fontSize: 14, color: COLORS.textPrimary },
+  historyTime: { fontSize: 12, color: COLORS.textSecondary },
 });

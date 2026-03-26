@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Sentry } from '../config/sentry';
 
 export type UnitSystem = 'metric' | 'imperial';
 
@@ -18,6 +19,9 @@ export const useUnitsStore = create<UnitsState>()(
     {
       name: 'units-store',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) try { Sentry.captureException(error); } catch {}
+      },
     }
   )
 );

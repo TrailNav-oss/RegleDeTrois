@@ -65,6 +65,16 @@ export const en = {
     portionCount: '%{count} portions',
     helpTitle: 'How does it work?',
     helpBody: 'Create recipes with their ingredients and base portions.\n\nClassic mode: change the number of portions and all quantities are recalculated.\n\nAdjusted mode: modify the quantity of one ingredient and the others adapt proportionally.\n\nExample: a recipe for 4, you want for 6 → all quantities are multiplied by 1.5.',
+    copyAll: 'Copy all',
+    copiedAll: 'Ingredients copied!',
+    searchPlaceholder: 'Search a recipe...',
+    shoppingList: 'Shopping list',
+    shoppingListCopied: 'Shopping list copied!',
+    exportRecipe: 'Export',
+    draftTitle: 'Draft found',
+    draftMessage: 'You have an unfinished recipe draft. Would you like to resume it?',
+    draftResume: 'Resume',
+    draftNew: 'New',
   },
 
   // Profile screen
@@ -75,6 +85,8 @@ export const en = {
     premium: 'Premium',
     goPremium: 'Go Premium',
     premiumDescription: 'No ads · Unlimited recipes',
+    premiumFeatureNoAds: 'No ads',
+    premiumFeatureUnlimited: 'Unlimited recipes',
     premiumSoon: 'In-app purchases coming soon.',
     restorePurchases: 'Restore purchases',
     unitSystem: 'Units',
@@ -84,6 +96,8 @@ export const en = {
     langAuto: 'Auto',
     langFr: 'FR',
     langEn: 'EN',
+    langEs: 'ES',
+    langDe: 'DE',
     about: 'About',
     appVersion: 'Version',
     buildNumber: 'Build',
@@ -96,6 +110,15 @@ export const en = {
     updateLater: 'Later',
     syncSuccess: 'Success',
     wrongPassword: 'Wrong password.',
+    devMode: 'Developer mode',
+    passwordLabel: 'Password',
+    devLabel: 'DEV',
+    customization: 'Customization',
+    recipeMultipliers: 'Recipe multipliers',
+    percentagePresets: 'Percentage shortcuts',
+    addValue: 'Add',
+    resetDefaults: 'Reset',
+    valuePlaceholder: 'Value',
   },
 
   // Onboarding
@@ -138,10 +161,12 @@ export const en = {
     calculate: 'Calculate',
     reset: 'Reset',
     copied: 'Result copied!',
+    formulaOf: 'of',
     presets: 'Presets',
     helpTitle: 'How does it work?',
     helpBody: 'Choose a calculation type:\n\n• % of a number: what is 15% of 200 → 30\n• Variation: from 80 to 100 → +25%\n• Increase: 200 + 20% → 240\n• Decrease: 200 - 20% → 160\n• Find the %: 30 is what % of 200 → 15%\n\nUse presets for common percentages (tax, tip...).',
     history: 'History',
+    searchHistory: 'Search...',
     justNow: 'just now',
     minutesAgo: '%{count} min ago',
     hoursAgo: '%{count} h ago',
@@ -162,6 +187,12 @@ export const en = {
     copied: 'Result copied!',
     helpTitle: 'How does it work?',
     helpBody: 'Choose a category (weight, volume, temperature).\n\nEnter a value and select the source and target units.\n\nConversion happens in real time.\n\nTap the ⇄ button to swap units.',
+    history: 'History',
+    searchHistory: 'Search...',
+    justNow: 'just now',
+    minutesAgo: '%{count} min ago',
+    hoursAgo: '%{count} h ago',
+    daysAgo: '%{count} d ago',
   },
 
   // PremiumGate
@@ -175,6 +206,14 @@ export const en = {
   errors: {
     EXACTLY_ONE_EMPTY: 'Exactly one field must be empty.',
     DIVISION_BY_ZERO: 'Division by zero is not possible.',
+    INVALID_RESULT: 'Invalid result.',
+  },
+
+  // ErrorBoundary
+  errorBoundary: {
+    title: 'Oops!',
+    message: 'An unexpected error occurred.',
+    retry: 'Retry',
   },
 
   // Common
@@ -182,5 +221,9 @@ export const en = {
     cancel: 'Cancel',
     error: 'Error',
     ok: 'OK',
+    justNow: 'just now',
+    minutesAgo: '%{count} min ago',
+    hoursAgo: '%{count} h ago',
+    daysAgo: '%{count} d ago',
   },
 };

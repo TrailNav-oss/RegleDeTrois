@@ -7,16 +7,14 @@ import { useTranslation } from '../../i18n/useTranslation';
 export function PurchaseModal() {
   const theme = useTheme();
   const { t } = useTranslation();
-  const {
-    purchaseModalVisible,
-    products,
-    loading,
-    error,
-    hidePurchaseModal,
-    loadProducts,
-    purchase,
-    restore,
-  } = useIapStore();
+  const purchaseModalVisible = useIapStore((s) => s.purchaseModalVisible);
+  const products = useIapStore((s) => s.products);
+  const loading = useIapStore((s) => s.loading);
+  const error = useIapStore((s) => s.error);
+  const hidePurchaseModal = useIapStore((s) => s.hidePurchaseModal);
+  const loadProducts = useIapStore((s) => s.loadProducts);
+  const purchase = useIapStore((s) => s.purchase);
+  const restore = useIapStore((s) => s.restore);
 
   useEffect(() => {
     if (purchaseModalVisible && products.length === 0) {
@@ -49,13 +47,12 @@ export function PurchaseModal() {
             </View>
 
             <Text variant="headlineSmall" style={[styles.title, { color: theme.colors.onSurface }]}>
-              Premium
+              {t('profile.premium')}
             </Text>
 
             <View style={styles.features}>
-              <FeatureRow icon="close-circle-outline" text={t('profile.premiumDescription').split(' · ')[0]} color={theme.colors.primary} />
-              <FeatureRow icon="infinity" text={t('profile.premiumDescription').split(' · ')[1]} color={theme.colors.primary} />
-              <FeatureRow icon="cloud-sync" text={t('profile.premiumDescription').split(' · ')[2]} color={theme.colors.primary} />
+              <FeatureRow icon="close-circle-outline" text={t('profile.premiumFeatureNoAds')} color={theme.colors.primary} />
+              <FeatureRow icon="infinity" text={t('profile.premiumFeatureUnlimited')} color={theme.colors.primary} />
             </View>
 
             {loading ? (

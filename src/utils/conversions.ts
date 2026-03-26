@@ -55,7 +55,8 @@ export function convertWeight(value: number, from: string, to: string): number |
   const fromFactor = WEIGHT_TO_GRAMS[from];
   const toFactor = WEIGHT_TO_GRAMS[to];
   if (fromFactor === undefined || toFactor === undefined) return null;
-  return (value * fromFactor) / toFactor;
+  const result = (value * fromFactor) / toFactor;
+  return isFinite(result) ? result : null;
 }
 
 /**
@@ -65,17 +66,19 @@ export function convertVolume(value: number, from: string, to: string): number |
   const fromFactor = VOLUME_TO_ML[from];
   const toFactor = VOLUME_TO_ML[to];
   if (fromFactor === undefined || toFactor === undefined) return null;
-  return (value * fromFactor) / toFactor;
+  const result = (value * fromFactor) / toFactor;
+  return isFinite(result) ? result : null;
 }
 
 /**
  * Convertit une température
  */
 export function convertTemperature(value: number, from: string, to: string): number | null {
-  if (from === to) return value;
-  if (from === '°C' && to === '°F') return (value * 9) / 5 + 32;
-  if (from === '°F' && to === '°C') return ((value - 32) * 5) / 9;
-  return null;
+  let result: number | null = null;
+  if (from === to) result = value;
+  else if (from === '°C' && to === '°F') result = (value * 9) / 5 + 32;
+  else if (from === '°F' && to === '°C') result = ((value - 32) * 5) / 9;
+  return result !== null && isFinite(result) ? result : null;
 }
 
 /**
